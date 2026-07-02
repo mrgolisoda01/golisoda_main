@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MR.GOLISODA — Master Creator & Org Access</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#07141f;--ink2:#0c1f2e;--panel:#0f2738;--panel2:#13303f;--line:#1d3e51;--line2:#27506a;
@@ -1321,15 +1320,7 @@ function setEcon(fr,k,v){const e=getEcon(CF.month||curMonth);if(!e[fr]){const s=
 
 function syncActive(){const e=getExp(curMonth);STATES.forEach(st=>{if(!e.states[st])e.states[st]={salary:0,travel:0,active:0};e.states[st].active=activeFrCount(st);});e.shared.active=FRS.filter(f=>f.status==='Active').length;renderExpense();toast('Active counts synced from Franchise master','ok');}
 
-function saveAll(){
-  // Persist to Supabase (SBSync is installed by the sync module below).
-  if(window.SBSync && typeof window.SBSync.save==='function'){
-    window.SBSync.save();
-    toast('Masters saved to Supabase.','ok');
-  } else {
-    toast('Masters saved (in-session). Supabase not connected.','ok');
-  }
-}
+function saveAll(){toast('Masters saved (in-session). Wire to Sheet/Supabase to persist.','ok');}
 
 
 
@@ -4171,184 +4162,6 @@ function renderPnlDrill(){
 
 function pnlInr(n){n=Math.round(n);const neg=n<0;return(neg?'-₹':'₹')+Math.abs(n).toLocaleString('en-IN');}
 
-
-/* ═══════════════════════════════════════════════════════════════════════
-   SUPABASE SYNC  (additive — does not modify any existing app logic)
-   • One shared company dataset, stored as key/value rows in table `app_state`.
-   • On load: fetch all rows, hydrate in-memory state, re-render.
-   • On any change: snapshot state and upsert (debounced). Persists across
-     refresh and is visible from any browser/device on the same account.
-   ═══════════════════════════════════════════════════════════════════════ */
-(function(){
-  const SUPABASE_URL = 'https://jmtrovnvsfypislnwfzz.supabase.co';
-  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptdHJvdm52c2Z5cGlzbG53Znp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MDE2NjMsImV4cCI6MjA5ODQ3NzY2M30.ZViBSZbXZv8vxEifWwL2EPtHLyKXbMhQiLoBXxqscYk';
-  const TABLE = 'app_state';          // your schema: columns (id text PK, data jsonb, updated_at timestamptz)
-                                      // one row per dataset — id = dataset name (EMP, FRS, PJP_STORE, ...)
-
-  if(!window.supabase || !window.supabase.createClient){
-    console.warn('[sync] Supabase client not loaded — running in local-only mode.');
-    window.__SB = null;
-    return;
-  }
-  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-  window.__SB = sb;
-
-  /* ---- state registry -------------------------------------------------
-     Each entry: how to READ the live value and how to WRITE it back.
-     `const` objects/arrays are mutated in place (clear + copy) so existing
-     closures that captured the reference keep working. `let` bindings live
-     on window in non-module scripts, so we reassign through window.       */
-  function replaceObj(target, src){            // in-place replace for a plain object
-    Object.keys(target).forEach(k=>delete target[k]);
-    if(src && typeof src==='object') Object.assign(target, src);
-  }
-  function replaceArr(target, src){            // in-place replace for an array
-    target.length=0;
-    if(Array.isArray(src)) src.forEach(x=>target.push(x));
-  }
-
-  const REG = {
-    // ----- org / config (let bindings) -----
-    POSITIONS: { get:()=>POSITIONS,     set:v=>{ if(Array.isArray(v)) window.POSITIONS=v; } },
-    STATES:    { get:()=>STATES,        set:v=>{ if(Array.isArray(v)) window.STATES=v; } },
-    FRS:       { get:()=>FRS,           set:v=>{ if(Array.isArray(v)) window.FRS=v; } },
-    EMP:       { get:()=>EMP,           set:v=>{ if(Array.isArray(v)){ window.EMP=v; window.nextId=Math.max(0,...v.map(e=>e.id||0))+1; } } },
-    USERS:     { get:()=>USERS,         set:v=>{ if(Array.isArray(v)) window.USERS=v; } },
-    APP_MONTHS:{ get:()=>APP_MONTHS,    set:v=>{ if(Array.isArray(v)&&v.length) window.APP_MONTHS=v; } },
-    // ----- const objects/arrays (mutate in place) -----
-    BURNFR:      { get:()=>BURNFR,        set:v=>replaceArr(BURNFR, v) },
-    ROUTES:      { get:()=>ROUTES,        set:v=>replaceObj(ROUTES, v) },
-    ROUTEDATA:   { get:()=>ROUTEDATA,     set:v=>replaceObj(ROUTEDATA, v) },
-    EXP:         { get:()=>EXP,           set:v=>replaceObj(EXP, v) },
-    ECON:        { get:()=>ECON,          set:v=>replaceObj(ECON, v) },
-    FR_PNL:      { get:()=>FR_PNL,        set:v=>replaceObj(FR_PNL, v) },
-    BURN_BY_MONTH:{ get:()=>BURN_BY_MONTH,set:v=>replaceObj(BURN_BY_MONTH, v) },
-    REPEAT_OVR:  { get:()=>REPEAT_OVR,    set:v=>replaceObj(REPEAT_OVR, v) },
-    PJP_STORE:   { get:()=>PJP_STORE,     set:v=>replaceObj(PJP_STORE, v) },
-    PJP_EXTRA:   { get:()=>PJP_EXTRA,     set:v=>replaceObj(PJP_EXTRA, v) },
-    DATASYNC:    { get:()=>DATASYNC,      set:v=>replaceObj(DATASYNC, v) },
-    // ----- STATE_HOLIDAYS: Sets aren't JSON-native, convert to/from arrays -----
-    STATE_HOLIDAYS: {
-      get:()=>{ const o={}; Object.keys(STATE_HOLIDAYS).forEach(st=>{ o[st]={}; Object.keys(STATE_HOLIDAYS[st]).forEach(mo=>{ o[st][mo]=[...STATE_HOLIDAYS[st][mo]]; }); }); return o; },
-      set:v=>{ Object.keys(STATE_HOLIDAYS).forEach(k=>delete STATE_HOLIDAYS[k]); if(v&&typeof v==='object'){ Object.keys(v).forEach(st=>{ STATE_HOLIDAYS[st]={}; Object.keys(v[st]).forEach(mo=>{ STATE_HOLIDAYS[st][mo]=new Set(v[st][mo]||[]); }); }); } }
-    },
-  };
-  const KEYS = Object.keys(REG);
-
-  function snapshot(){
-    const out={};
-    KEYS.forEach(k=>{ try{ out[k]=REG[k].get(); }catch(e){ /* skip */ } });
-    return out;
-  }
-
-  /* re-run the app's own render entry points so hydrated data shows up,
-     without assuming which module/tab is active */
-  function repaint(){
-    try{ if(typeof buildFilterBar==='function') buildFilterBar(); }catch(e){}
-    try{ if(SESSION && typeof applyRole==='function') applyRole(); }catch(e){}
-    try{
-      const activeTab=document.querySelector('.tab.active');
-      if(activeTab && typeof render==='function'){ render(activeTab.dataset.v); }
-      const activeMod=document.querySelector('.modbtn.active');
-      if(activeMod && typeof switchModule==='function'){ switchModule(activeMod.dataset.m); }
-    }catch(e){}
-  }
-
-  let lastSaved='';           // JSON of last successful push, for change detection
-  let saveTimer=null;
-  let ready=false;            // don't save until initial load completes
-  let disabled=false;         // circuit breaker — trips when the environment can't do fetch
-  let heartbeat=null;
-
-  /* Some sandboxed environments (e.g. an iframe that proxies fetch over
-     postMessage) can't clone the Response/Headers objects the Supabase
-     client uses, and throw DataCloneError on every call. Rather than spam
-     the console and retry forever, trip a breaker on the first such failure
-     (or a couple of consecutive network errors) and fall back to local-only.
-     In a normal browser tab / hosted deploy this never fires. */
-  function tripBreaker(reason){
-    if(disabled) return;
-    disabled=true;
-    clearTimeout(saveTimer);
-    if(heartbeat) clearInterval(heartbeat);
-    console.warn('[sync] disabled — running local-only. Reason: '+reason+
-      '\n[sync] This is expected inside the in-app preview sandbox; open the file in a real browser tab or host it and sync will work.');
-  }
-  function isFatalEnvError(e){
-    const m = (e && (e.message||e.name||''))+'';
-    return m.indexOf('DataClone')>-1 || m.indexOf('could not be cloned')>-1 || m.indexOf('postMessage')>-1;
-  }
-
-  async function loadAll(){
-    if(disabled) return;
-    try{
-      const { data, error } = await sb.from(TABLE).select('id,data').in('id', KEYS);
-      if(error){ console.warn('[sync] load error:', error.message); ready=true; return; }
-      if(data && data.length){
-        const map={};
-        data.forEach(row=>{ map[row.id] = row.data; });
-        KEYS.forEach(k=>{ if(k in map){ try{ REG[k].set(map[k]); }catch(e){ console.warn('[sync] hydrate '+k, e); } } });
-        lastSaved = JSON.stringify(snapshot());
-        repaint();
-        console.log('[sync] loaded '+data.length+' datasets from Supabase');
-      }else{
-        console.log('[sync] no saved data; seeding table from current state');
-        lastSaved='';
-        await saveAll(true);
-      }
-    }catch(e){
-      if(isFatalEnvError(e)){ tripBreaker(e.message||e.name); }
-      else{ console.warn('[sync] load failed:', e); }
-    }finally{
-      ready=true;
-    }
-  }
-
-  let failCount=0;
-  async function saveAll(force){
-    if(disabled) return;
-    if(!ready && !force) return;
-    const snap = snapshot();
-    const json = JSON.stringify(snap);
-    if(!force && json===lastSaved) return;        // nothing changed
-    const stamp = new Date().toISOString();
-    const rows = KEYS.map(k=>({ id: k, data: snap[k], updated_at: stamp }));
-    try{
-      const { error } = await sb.from(TABLE).upsert(rows, { onConflict:'id' });
-      if(error){ console.warn('[sync] save error:', error.message); return; }
-      lastSaved = json;                            // only mark saved on success
-      failCount=0;
-    }catch(e){
-      if(isFatalEnvError(e)){ tripBreaker(e.message||e.name); return; }
-      if(++failCount>=3){ tripBreaker('repeated network failures'); return; }
-      console.warn('[sync] save failed:', e);
-    }
-  }
-  function scheduleSave(){
-    if(disabled || !ready) return;
-    clearTimeout(saveTimer);
-    saveTimer=setTimeout(()=>saveAll(false), 800);   // debounce bursts of edits
-  }
-
-  // Autosave triggers: any user interaction that could mutate state, plus a
-  // periodic safety flush and a flush when the tab is hidden/closed.
-  ['click','change','keyup','input'].forEach(ev=>
-    document.addEventListener(ev, scheduleSave, true)
-  );
-  heartbeat=setInterval(()=>saveAll(false), 15000);
-  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveAll(false); });
-  window.addEventListener('beforeunload', ()=>{ try{ saveAll(false); }catch(e){} });
-
-  // expose manual hooks (handy for debugging / forcing a sync)
-  window.SBSync = { save:()=>saveAll(true), load:loadAll, snapshot, status:()=>({disabled, ready}) };
-
-  // kick off initial load once the DOM + app boot have run
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded', loadAll);
-  }else{
-    loadAll();
-  }
-})();
 
 /* BOOT */
 buildFilterBar();
