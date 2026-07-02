@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MR.GOLISODA — Master Creator & Org Access</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#07141f;--ink2:#0c1f2e;--panel:#0f2738;--panel2:#13303f;--line:#1d3e51;--line2:#27506a;
@@ -157,9 +158,6 @@ tbody tr:last-child td{border-bottom:none}
 .p6-kpi .kl{font-size:10px;color:var(--txt-mute);letter-spacing:.08em;text-transform:uppercase;font-weight:700}
 .p6-kpi .kv{font-family:'Space Grotesk';font-weight:700;font-size:18px;line-height:1.2;margin-top:4px}
 .p6-kpi-sep{width:1px;background:var(--line);align-self:stretch}
-.p6-kpi-click{border-radius:9px;padding:4px 6px;transition:background .12s,box-shadow .12s}
-.p6-kpi-click:hover{background:rgba(255,255,255,.05)}
-.p6-kpi-on{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px var(--line2)}
 .p6-panel{background:var(--ink2);border:1px solid var(--line);border-radius:10px;margin-bottom:10px;overflow:hidden}
 .p6-ph{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);cursor:pointer}
 .p6-ph h4{font-family:'Archivo';font-weight:800;font-size:13px;flex:1}
@@ -242,12 +240,12 @@ tbody tr:last-child td{border-bottom:none}
     <button class="tab" data-v="users">👥 Users &amp; Logins</button>
     <button class="tab" data-v="bulk">📤 Bulk Update</button>
     <button class="tab" data-v="employee">👤 Employees</button>
-    <button class="tab" data-v="hierarchy">🌳 Hierarchy</button>
     <button class="tab" data-v="franchise">🏪 Franchises</button>
     <button class="tab" data-v="position">🎖 Positions</button>
     <button class="tab" data-v="geography">🗺 Geography</button>
     <button class="tab" data-v="expense">💰 Expense (monthly)</button>
     <button class="tab" data-v="guarantee">🔒 Guarantee &amp; Fixed</button>
+    <button class="tab" data-v="monthburn">🔥 Monthly Burn</button>
     <button class="tab" data-v="routeoutlet">🛣 Routes &amp; Outlets</button>
     <button class="tab" data-v="holidays">📅 Non-Working Days</button>
     <button class="tab" data-v="datasync">📂 Data Sync</button>
@@ -319,12 +317,12 @@ tbody tr:last-child td{border-bottom:none}
  <div class="module active" id="mod-masters">
   <div class="view active" id="v-access"></div>
   <div class="view" id="v-employee"></div>
-  <div class="view" id="v-hierarchy"></div>
   <div class="view" id="v-franchise"></div>
   <div class="view" id="v-position"></div>
   <div class="view" id="v-geography"></div>
   <div class="view" id="v-expense"></div>
   <div class="view" id="v-guarantee"></div>
+  <div class="view" id="v-monthburn"></div>
   <div class="view" id="v-users"></div>
   <div class="view" id="v-bulk"></div>
   <div class="view" id="v-routeoutlet"></div>
@@ -347,114 +345,6 @@ tbody tr:last-child td{border-bottom:none}
 const ORG={"positions":["CVO","NSM","NMEM","State Head","BDM","BDE","Launch Executive","Admin"],"states":["Tamil Nadu","AP & Telangana","Karnataka","Maharashtra","Chhattisgarh","Gujarat","Jharkhand"],"franchises":[["Sivagangai","Tamil Nadu","Nirmal","Prem"],["Salem","Tamil Nadu","Kamesh","Suresh"],["Tiruppur","Tamil Nadu","Kamesh","-"],["Pallavaram","Tamil Nadu","Chetan","Chetan"],["Vellore","Tamil Nadu","Chetan","Subramani"],["Chennai","Tamil Nadu","Chetan","Mani"],["Trichy","Tamil Nadu","Nirmal","-"],["Nellore","AP & Telangana","Sai Kumar","Shaik Masthan"],["Guntur","AP & Telangana","Sai Kumar","Yeshwanth"],["Annamaya","AP & Telangana","Sai Kumar","Kesavulu"],["Anantapur","AP & Telangana","Shabbir","Pushpakula"],["Chittoor","AP & Telangana","Sai Kumar","Surendra"],["Hyderabad","AP & Telangana","-","Avinash"],["Narasarapet","AP & Telangana","Prasad","Manichandra"],["Anakapalle","AP & Telangana","Prasad","Guna"],["Visakhapatnam","AP & Telangana","Prasad","-"],["Nirmal","AP & Telangana","Avinash","Sandeep"],["Belgaum","Karnataka","Iftiyar","Soyab"],["Hubli","Karnataka","Iftiyar","Suraj"],["Chickaballapur","Karnataka","-","Hemanth"],["Kolhapur","Maharashtra","Abhinandhan","Utkarsh"],["Nagpur","Maharashtra","Sahil","Ritish"],["Satara","Maharashtra","Abhinandhan","Suraj Anil"],["Sangli","Maharashtra","Abhinandhan","Pravin"],["Akola","Maharashtra","-","Aditya"],["Nagpur 2","Maharashtra","Sahil","Meshram"],["Raipur","Chhattisgarh","-","-"],["Ahmedabad","Gujarat","-","Krishna"],["Jamshedpur","Jharkhand","-","Mahtab"]],"employees":[{"id":46,"name":"Chandru","pos":"CVO","state":"All","reports":"","frs":[]},{"id":1,"name":"Thulasi","pos":"NSM","state":"All","reports":46,"frs":[]},{"id":2,"name":"Nirmal","pos":"State Head","state":"Tamil Nadu","reports":1,"frs":[]},{"id":3,"name":"Sai Kumar","pos":"State Head","state":"AP & Telangana","reports":1,"frs":[]},{"id":4,"name":"Suresh","pos":"State Head","state":"Karnataka","reports":1,"frs":[]},{"id":5,"name":"Abhinandhan","pos":"State Head","state":"Maharashtra","reports":1,"frs":[]},{"id":6,"name":"Chhattisgarh SH (vacant)","pos":"State Head","state":"Chhattisgarh","reports":1,"frs":[]},{"id":7,"name":"Nikhil","pos":"State Head","state":"Gujarat","reports":1,"frs":[]},{"id":8,"name":"Jharkhand SH (vacant)","pos":"State Head","state":"Jharkhand","reports":1,"frs":[]},{"id":9,"name":"Nirmal","pos":"BDM","state":"Tamil Nadu","reports":2,"frs":[]},{"id":10,"name":"Kamesh","pos":"BDM","state":"Tamil Nadu","reports":2,"frs":[]},{"id":11,"name":"Chetan","pos":"BDM","state":"Tamil Nadu","reports":2,"frs":[]},{"id":12,"name":"Sai Kumar","pos":"BDM","state":"AP & Telangana","reports":3,"frs":[]},{"id":13,"name":"Shabbir","pos":"BDM","state":"AP & Telangana","reports":3,"frs":[]},{"id":14,"name":"Prasad","pos":"BDM","state":"AP & Telangana","reports":3,"frs":[]},{"id":15,"name":"Avinash","pos":"BDM","state":"AP & Telangana","reports":3,"frs":[]},{"id":16,"name":"Iftiyar","pos":"BDM","state":"Karnataka","reports":4,"frs":[]},{"id":17,"name":"Abhinandhan","pos":"BDM","state":"Maharashtra","reports":5,"frs":[]},{"id":18,"name":"Sahil","pos":"BDM","state":"Maharashtra","reports":5,"frs":[]},{"id":19,"name":"Prem","pos":"BDE","state":"Tamil Nadu","reports":9,"frs":["Sivagangai"]},{"id":20,"name":"Suresh","pos":"BDE","state":"Tamil Nadu","reports":10,"frs":["Salem"]},{"id":21,"name":"Chetan","pos":"BDE","state":"Tamil Nadu","reports":11,"frs":["Pallavaram"]},{"id":22,"name":"Subramani","pos":"BDE","state":"Tamil Nadu","reports":11,"frs":["Vellore"]},{"id":23,"name":"Mani","pos":"BDE","state":"Tamil Nadu","reports":11,"frs":["Chennai"]},{"id":24,"name":"Shaik Masthan","pos":"BDE","state":"AP & Telangana","reports":12,"frs":["Nellore"]},{"id":25,"name":"Yeshwanth","pos":"BDE","state":"AP & Telangana","reports":12,"frs":["Guntur"]},{"id":26,"name":"Kesavulu","pos":"BDE","state":"AP & Telangana","reports":12,"frs":["Annamaya"]},{"id":27,"name":"Pushpakula","pos":"BDE","state":"AP & Telangana","reports":13,"frs":["Anantapur"]},{"id":28,"name":"Surendra","pos":"BDE","state":"AP & Telangana","reports":12,"frs":["Chittoor"]},{"id":29,"name":"Avinash","pos":"BDE","state":"AP & Telangana","reports":3,"frs":["Hyderabad"]},{"id":30,"name":"Manichandra","pos":"BDE","state":"AP & Telangana","reports":14,"frs":["Narasarapet"]},{"id":31,"name":"Guna","pos":"BDE","state":"AP & Telangana","reports":14,"frs":["Anakapalle"]},{"id":32,"name":"Sandeep","pos":"BDE","state":"AP & Telangana","reports":15,"frs":["Nirmal"]},{"id":33,"name":"Soyab","pos":"BDE","state":"Karnataka","reports":16,"frs":["Belgaum"]},{"id":34,"name":"Suraj","pos":"BDE","state":"Karnataka","reports":16,"frs":["Hubli"]},{"id":35,"name":"Hemanth","pos":"BDE","state":"Karnataka","reports":4,"frs":["Chickaballapur"]},{"id":36,"name":"Utkarsh","pos":"BDE","state":"Maharashtra","reports":17,"frs":["Kolhapur"]},{"id":37,"name":"Ritish","pos":"BDE","state":"Maharashtra","reports":18,"frs":["Nagpur"]},{"id":38,"name":"Suraj Anil","pos":"BDE","state":"Maharashtra","reports":17,"frs":["Satara"]},{"id":39,"name":"Pravin","pos":"BDE","state":"Maharashtra","reports":17,"frs":["Sangli"]},{"id":40,"name":"Aditya","pos":"BDE","state":"Maharashtra","reports":5,"frs":["Akola"]},{"id":41,"name":"Meshram","pos":"BDE","state":"Maharashtra","reports":18,"frs":["Nagpur 2"]},{"id":42,"name":"Krishna","pos":"BDE","state":"Gujarat","reports":7,"frs":["Ahmedabad"]},{"id":43,"name":"Mahtab","pos":"BDE","state":"Jharkhand","reports":8,"frs":["Jamshedpur"]},{"id":44,"name":"Launch Executive 1","pos":"Launch Executive","state":"Tamil Nadu","reports":47,"frs":["Salem","Trichy"]},{"id":45,"name":"Launch Executive 2","pos":"Launch Executive","state":"AP & Telangana","reports":47,"frs":["Guntur","Nellore"]},{"id":47,"name":"Yogaraj","pos":"NMEM","state":"All","reports":46,"frs":[]}],"stateHeads":{"Tamil Nadu":"Nirmal","AP & Telangana":"Sai Kumar","Karnataka":"Suresh","Maharashtra":"Abhinandhan","Chhattisgarh":"-","Gujarat":"Nikhil","Jharkhand":"-"}};
 const FRROUTES={"Sivagangai":["SIVAGANGAI_ARANTHANGI_BUYING ROUTE 5","SIVAGANGAI_DEVAKOTAI_BUYING ROUTE 6","SIVAGANGAI_KARAIKUDI_BUYING ROUTE_02","SIVAGANGAI_PUDUKOTTAI_BUYING ROUTE 4","SIVAGANGAI_SIVAGANGAI_BUYING ROUTE_01","SIVAGANGAI_TIRUPATTUR_BUYING_ROUTE_03"],"Salem":["SALEM 2 _NEW BUSTAND_03","SALEM_ATHUR","SALEM_EDAPADI","SALEM_LOCAL_1","SALEM_LOCAL_2","SALEM_OMALUR","SALEM_YERCAUD"],"Tiruppur":["TIRUPPUR 2 KANGEYAM_BUYING_ROUTE 05","TIRUPPUR _ANNUR_BUYING_ROUTE_03","TIRUPPUR _AVINASHI ROAD_BUYING_ROUTE 01","TIRUPPUR _BUYING_ROUTE 02","TIRUPPUR _PALLADAM_BUYING_ROUTE 06","TIRUPPUR_SATHYAMANGALAM_BUYING_ROUTE 04"],"Pallavaram":["GST_ROAD_ROUTE_SALE_01","PALLAVARAM_NEW_ROUTE_SALE_02","SELAIYUR_ROUTE_SALE_04","WEST_TAMBARAM_NEW_ROUTE_SALE_03"],"Vellore":["VELLORE_ARCOT_01","VELLORE_GUDIYATHAM_04","VELLORE_KATPADI_03","VELLORE_PALLIKONDA_05","VELLORE_SRIPURAM_06","VELLORE_VELLORE_02"],"Chennai":["ADYAR ROUTE SALE_ROUTE_04","AMBATTUR ROUTE SALE_ROUTE_16","ANNA NAGAR EAST ROUTE SALE_ROUTE_17","ANNA NAGAR WEST ROUTE SALE_ROUTE_18","AVADI ROUTE SALE_ROUTE_14","THIRUMULLAIVOIL ROUTE SALE_ROUTE_15","THIRUNINDRAVUR ROUTE SALE_ROUTE_13"],"Trichy":["TRICHY_LALKUDI_BUYING_ROUTE 02","TRICHY_MANAPARAI_BUYING_ROUTE 01","TRICHY_MUSURI_ BUYING_ROUTE 06","TRICHY_PALPANNAI_BUYING_ROUTE 04","TRICHY_TVS TOLLGATE_BUYING_ROUTE 05","TRICHY_VEERALIMALAI_BUYING_ROUTE 03"],"Nellore":["NELLORE HIGHWAY TO KAVALI_ROAD_06","NELLORE_BOSUBOMA_MINI_BYE_VEDAYAPALEM _ROAD_01","NELLORE_HARINATHAPURAM TO MUTHUKUR_ROUTE_05","NELLORE_MYPADU GATE TO BUCHIREDDYPALLEM_ROAD_02","NELLORE_MYPADU, KODURU BEACH ROAD_03","NELLORE_PODHALAKURU,ROAD, BUJA BUJA GUDUR ROUTE_04"],"Guntur":["GUNTUR LOCAL ROUTE_01","GUNTUR_ARUNDELPET BRODIPET_ROUTE_04","GUNTUR_GARDEN CENTER TOWN ROUTE_02","GUNTUR_MAHATMA GANDHI NAGAR INNER RING RD ROUTE_03","GUNTUR_PERACHALA JUNCTION ROUTE_05","GUNTUR_TENALI ROUTE_06"],"Annamaya":[],"Anantapur":["ANANTAPUR_BENGALURU HIHGWAY_ROUTE_02","ANANTAPUR_DHARMAVARAM_ROUTE_04","ANANTAPUR_GOOTY_ROUTE_05","ANANTAPUR_KADIRI_ROUTE_03","ANANTAPUR_LOCAL ROUTE_01","ANANTAPUR_TADIPATRI_06"],"Chittoor":["CHITTOOR_CHITTOOR_2_BUYING ROUTE_06","CHITTOOR_LOCAL_BUYING ROUTE 2","CHITTOOR_MURUGAMPATTU_ROUTE_05","CHITTOOR_NAGARI_BUYING ROUTE 3","CHITTOOR_PALAMANER_BUYING ROUTE 1","CHITTOOR_PILER_BUYING ROUTE 4"],"Hyderabad":["HYDERABAD_CHILKUR_BUYING_ROUTE_02","HYDERABAD_GACHIBOLI_BUYING_ROUTE_04","HYDERABAD_KHAIRATABAD_MEHDIPATNAM_ROUTE_03","HYDERABAD_MADHAPUR_BUYING_ROUTE_05","HYDERABAD_MANIKONDA_BUYING_ROUTE_06","HYDERABAD__GOWLIDODDY_BUYING_ROUTE_01"],"Narasarapet":[],"Anakapalle":["ANAKAPALLE_ANAKAPALLE_BUYING_ROUTE_01","ANAKAPALLE_CHODAVARAM_BUYING_ROUTE_05","ANAKAPALLE_GAJUWAKA_BUYING ROUTE 2","ANAKAPALLE_NARSIPATNAM_ROUTE 03","ANAKAPALLE_PARAWADA_BUYING_ROUTE_04","ANAKAPALLE_YELAMANCHILI_BUYING_ROUTE_06"],"Visakhapatnam":["VISAKHAPATNAM_KAILASAGIRI BUYING_ROUTE 01","VISAKHAPATNAM_NAD BUYING_ROUTE 06","VISAKHAPATNAM_PM PALEM BUYING_ROUTE 05","VISAKHAPATNAM_RTC COMPLEX BUYING_ROUTE 03","VISAKHAPATNAM_SABBAVARM_BUYING_ROUTE 02"],"Nirmal":["NIRMAL_ARMOR_BUYING_ROUTE_02","NIRMAL_BASARA_BUYING ROUTE_03","NIRMAL_ICHODA_BUYING ROUTE_06","NIRMAL_KANAPUR_BUYING_ROUTE_01","NIRMAL_NIRMAL_BUYING_ROUTE_04","NIRMAL_SWARNA_BUYING ROUTE_05"],"Belgaum":["BELGUAM_ GOKAK_ROUTE_03","BELGUAM_BELGUAM_ROUTE_01","BELGUAM_BELGUAM_ROUTE_02","BELGUAM_CHIKODI_ROUTE_01","BELGUAM_NIPPANI_ROUTE_05","BELGUAM_RAIBAG_ROUTE_04"],"Hubli":["HUBLI_BEHRIDEVARKOP_ROUTE_06","HUBLI_CBT_ROUTE_03","HUBLI_KESHPUR_ROUTE_02","HUBLI_RGS_ROUTE_01","HUBLI_SHIROR PARK  _ROUTE_05","HUBLI_VIDYA NAGAR _ROUTE_04"],"Chickaballapur":[],"Kolhapur":["KOLHAPUR KAWALA NAKA MAIN CITY-04","KOLHAPUR WATHAR ICHAK.LKARANJI 01","KOLHAPUR_KAGAL-UNCHGOAN_03","KOLHAPUR_KALAMBA-PHULEWADI_05","KOLHAPUR_RAJARAMPURI KALMBA_02","KOLHAPUR_RANKALA-PHULEWADI-04","KOLHAPUR_STATIONRD-KADAMWADI_01","KOLHAPUR_TARABAI-KASBA_BAWDA_02","KOLHAPUR_WATAR_ATIGRE_PHATA_06"],"Nagpur":["NAGPUR_02_BUS_STAND_04","NAGPUR_02_KAMTHEE_INTERIOR_02","NAGPUR_02_MANEWADA_RAMESHWARI_06","NAGPUR_02_MOMINPURA_05","NAGPUR_02_SHANTHI NAGAR - RANADA_01","NAGPUR_02_TAJBAGH_03","NAGPUR_HB TOWN-MOMINPURA_01","NAGPUR_HB_TOWN-NANDAN-1_02","NAGPUR_KALAMNA -PARDI_04","NAGPUR_PEELI NADI-JAFFAR_NAGAR_03"],"Satara":["SATARA_BUYING_ROUTE_06","SATARA_KARAD_ROUTE_04","SATARA_KOREGOAN_ROUTE_03","SATARA_MAHABALISHWAR_ROUTE_05","SATARA_POWAI_NAKA_ROUTE_02","SATARA_PUNE_HWY_BUYING_ROUTE_01"],"Sangli":["SANGLI_BUYING_ROUTE_01","SANGLI_MIRAJ_ROUTE_04","SANGLI_VITA_TASGAM_ROUTE_06","SANGLI_ZSLAMPUR_ROUTE_05","SANG_VISHRAMBAG_ROUTE_02"],"Akola":["AKOLA_BARSHITAKLI_ROUTE_03","AKOLA_CITY_02_ROUTE_02","AKOLA_CITY_ROUTE_01","AKOLA_MURTIJAPUR_ROUTE_04"],"Nagpur 2":["NAGPUR_02_BUS_STAND_04","NAGPUR_02_KAMTHEE_INTERIOR_02","NAGPUR_02_MANEWADA_RAMESHWARI_06","NAGPUR_02_MOMINPURA_05","NAGPUR_02_SHANTHI NAGAR - RANADA_01","NAGPUR_02_TAJBAGH_03","NAGPUR_HB TOWN-MOMINPURA_01","NAGPUR_HB_TOWN-NANDAN-1_02","NAGPUR_KALAMNA -PARDI_04","NAGPUR_PEELI NADI-JAFFAR_NAGAR_03"],"Raipur":["RAIPUR_BANSTAL-BHATAGAON_04","RAIPUR_KUTCHERY-VIDHAN_SABHA _01","RAIPUR_MOUDHAPARA-PURANIBASTI_03","RAIPUR_SHYAM_NAGAR-DEOPURI_ROUTE_06","RAIPUR_STATION-RAIPURA_02","RAIPUR_TELIBANDHA-MANA_05"],"Ahmedabad":["AHMD_GANDHINAGAR_HIGHWAY_ROUTE_03","AHMD_GANESHPUR_ROUTE_01","AHMD_GANESHPUR_ROUTE_04","AHMD_GANESHPUR_ROUTE_05","AHMD_RAYSAN-GANDHINAGAR_ROUTE_02","AHMD_VAISHNODEVI-RELIANCE_ROUTE_01"],"Jamshedpur":["JAMSHEDPUR_ADITYAPUR & JUGSALAI_ROUTE_03","JAMSHEDPUR_ADITYAPUR_ROUTE_04","JAMSHEDPUR_JUGSALAI_SUNDARNAGR_ROUTE_06","JAMSHEDPUR_KADAM_SONARI_ROUTE_05","JAMSHEDPUR_MANGO & KADAM_ROUTE_02","JAMSHEDPUR_MANGO_DIMNA_ROUTE_02","JAMSHEDPUR_SAKCHI & TELCO_ROUTE_01","JAMSHEDPUR_SAKCHI-BISTUPUR_ROUTE_01","JAMSHEDPUR_TELCO_GOLMURI_ROUTE_03"]};
 const ROUTES=JSON.parse(JSON.stringify(FRROUTES));
-
-/* ===== OUTLET MASTER (editable, retains individual outlet rows) ===== */
-const BEAT_PULSE_OPTIONS=['Active','To-be-Dormant','Dormant','Dead','Non-Productive Outlet'];
-let OUTLETS=[];   // {state, fr, route, outlet, beatPulse, target}
-
-/* ===================== SUPABASE CLOUD PERSISTENCE =====================
-   Saves a full snapshot of all app data to a single row in the `app_state`
-   table so entries survive reload and are visible to anyone who opens the app. */
-const SB_URL='https://jmtrovnvsfypislnwfzz.supabase.co';
-const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptdHJvdm52c2Z5cGlzbG53Znp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MDE2NjMsImV4cCI6MjA5ODQ3NzY2M30.ZViBSZbXZv8vxEifWwL2EPtHLyKXbMhQiLoBXxqscYk';
-const SB_HEAD={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
-let SB_LOADING=false, SB_SAVE_T=null;
-
-function sbSnapshot(){
-  // STATE_HOLIDAYS holds Sets → convert to arrays for JSON
-  let hol={};
-  try{ Object.keys(STATE_HOLIDAYS).forEach(st=>{ hol[st]={}; Object.keys(STATE_HOLIDAYS[st]).forEach(mo=>{ hol[st][mo]=[...STATE_HOLIDAYS[st][mo]]; }); }); }catch(e){}
-  return { v:1, at:new Date().toISOString(),
-    OUTLETS, STATES, FRS, EMP, USERS, EXP, ECON, FR_PNL, BURNFR,
-    ROUTEDATA, PJP_STORE, DATASYNC, dsDate, nextId,
-    REDUCT, GROWTH, STATE_HOLIDAYS:hol };
-}
-function sbRebuildDerived(){
-  try{ BURNROWS=BURNFR.map(f=>({fr:f.name,state:f.state,bdm:f.bdm,bde:f.bde,routes:f.routes,month:'2026-05',monthName:'May 2026',date:new Date(2026,4,1),spend:f.expense,share:f.share,burn:f.burn,target:f.expense,achieved:f.share})); }catch(e){}
-}
-function sbHydrate(d){
-  try{
-    const repObj=(t,s)=>{ if(s&&typeof s==='object'){ Object.keys(t).forEach(k=>delete t[k]); Object.assign(t,s); } };
-    if(Array.isArray(d.OUTLETS)) OUTLETS=d.OUTLETS;
-    if(Array.isArray(d.STATES))  STATES=d.STATES;
-    if(Array.isArray(d.FRS))     FRS=d.FRS;
-    if(Array.isArray(d.EMP))     EMP=d.EMP;
-    if(Array.isArray(d.USERS))   USERS=d.USERS;
-    if(typeof d.dsDate==='string') dsDate=d.dsDate;
-    if(typeof d.nextId==='number') nextId=d.nextId;
-    repObj(EXP,d.EXP); repObj(ECON,d.ECON); repObj(FR_PNL,d.FR_PNL);
-    repObj(PJP_STORE,d.PJP_STORE); repObj(DATASYNC,d.DATASYNC);
-    repObj(REDUCT,d.REDUCT); repObj(GROWTH,d.GROWTH);
-    if(d.STATE_HOLIDAYS&&typeof d.STATE_HOLIDAYS==='object'){
-      Object.keys(STATE_HOLIDAYS).forEach(k=>delete STATE_HOLIDAYS[k]);
-      Object.keys(d.STATE_HOLIDAYS).forEach(st=>{ STATE_HOLIDAYS[st]={}; Object.keys(d.STATE_HOLIDAYS[st]).forEach(mo=>{ STATE_HOLIDAYS[st][mo]=new Set(d.STATE_HOLIDAYS[st][mo]||[]); }); });
-    }
-    if(Array.isArray(d.BURNFR)){ BURNFR.length=0; d.BURNFR.forEach(x=>BURNFR.push(x)); }
-    if(d.ROUTEDATA&&typeof d.ROUTEDATA==='object'){ Object.keys(ROUTEDATA).forEach(k=>delete ROUTEDATA[k]); Object.assign(ROUTEDATA,d.ROUTEDATA); }
-    sbRebuildDerived();
-    return true;
-  }catch(e){ console.error('Supabase hydrate failed',e); return false; }
-}
-async function sbLoad(){
-  SB_LOADING=true; sbStatus('saving');
-  try{
-    const res=await fetch(SB_URL+'/rest/v1/app_state?id=eq.main&select=data',{headers:SB_HEAD});
-    if(!res.ok){ sbStatus('offline'); SB_LOADING=false; return false; }
-    const rows=await res.json();
-    if(rows&&rows[0]&&rows[0].data){
-      sbHydrate(rows[0].data);
-      try{buildFilterBar&&buildFilterBar();}catch(e){}
-      try{buildP6Filters&&buildP6Filters();}catch(e){}
-      try{P6_DATA=dsActiveData();}catch(e){}
-      SB_LOADING=false; sbStatus('synced');
-      try{reRenderActive();}catch(e){}
-      return true;
-    }
-    SB_LOADING=false; sbStatus('synced'); // table exists but empty yet
-    return false;
-  }catch(e){ SB_LOADING=false; sbStatus('offline'); return false; }
-}
-async function sbSave(){
-  if(SB_LOADING) return;
-  try{
-    const res=await fetch(SB_URL+'/rest/v1/app_state?on_conflict=id',{
-      method:'POST',
-      headers:{...SB_HEAD,'Prefer':'resolution=merge-duplicates,return=minimal'},
-      body:JSON.stringify({id:'main',data:sbSnapshot(),updated_at:new Date().toISOString()})
-    });
-    sbStatus(res.ok?'synced':'error');
-    if(!res.ok){ try{console.warn('Supabase save',res.status,await res.text());}catch(e){} }
-  }catch(e){ sbStatus('offline'); }
-}
-/* call this after any data change; it batches rapid edits into one save */
-function sbSaveDebounced(){
-  if(SB_LOADING) return;
-  sbStatus('saving');
-  clearTimeout(SB_SAVE_T);
-  SB_SAVE_T=setTimeout(sbSave,1200);
-}
-function sbStatus(s){
-  const el=document.getElementById('sbStatus'); if(!el)return;
-  const map={synced:['☁ Synced','var(--green)'],saving:['☁ Saving…','var(--amber)'],offline:['☁ Offline','var(--txt-mute)'],error:['☁ Save failed','var(--red)']};
-  const v=map[s]||['☁','']; el.textContent=v[0]; el.style.color=v[1];
-}
-
-function outletsFor(route){return OUTLETS.filter(o=>o.route===route);}
-function recomputeRouteFromOutlets(route){
-  const R=ROUTEDATA.routes.find(r=>r.route===route);
-  if(!R)return false;
-  const os=outletsFor(route);
-  let outlets=0,buy=0,nonbuy=0,buyPot=0,nonbuyPot=0;
-  os.forEach(o=>{
-    outlets++;
-    const bp=(o.beatPulse||'').toString().toUpperCase();
-    const buying=!bp.includes('NON-PRODUCTIVE')&&bp.trim()!=='';
-    const tgt=+o.target||0;
-    if(buying){buy++;buyPot+=tgt;}else{nonbuy++;nonbuyPot+=tgt;}
-  });
-  Object.assign(R,{outlets,buy,nonbuy,buyPot,nonbuyPot});
-  return true;
-}
 
 /* ===== STATE NON-WORKING DAYS (set by admin per state per month) ===== */
 const STATE_HOLIDAYS = {}; // { state: { 'YYYY-MM': Set of 'YYYY-MM-DD' } }
@@ -499,7 +389,7 @@ const $=s=>document.querySelector(s);
 function toast(m,t){const e=$('#toast');e.textContent=m;e.className='toast show '+(t||'');setTimeout(()=>e.className='toast',2400);}
 function posClass(p){return 'pos-'+p.replace(/\s/g,'');}
 function empById(id){return EMP.find(e=>e.id==id);}
-function routesFor(fr){return ROUTEDATA.routes.filter(r=>r.fr===fr).map(r=>r.route);}
+function routesFor(fr){return ROUTES[fr]||(ROUTES[fr]=[]);}
 
 /* ===== VIEWABILITY: franchises visible to an employee (roll-up) ===== */
 function directReports(id){return EMP.filter(e=>e.reports==id);}
@@ -569,7 +459,7 @@ const ROLES = {
   admin:      {label:'Admin',       scope:'all',  edit:true,  modules:'all'},
   nsm:        {label:'NSM',         scope:'all',  edit:false, modules:'all', approve:['lock','expense']},
   finance:    {label:'Finance',     scope:'all',  edit:false, modules:'all', approve:['expense']},
-  statehead:  {label:'State Head',  scope:'state',edit:false, modules:'all', approve:['sh'], canEditVar:true},
+  statehead:  {label:'State Head',  scope:'state',edit:false, modules:'all', approve:['sh']},
   bdm:        {label:'BDM',         scope:'bdm',  edit:false, modules:'all', approve:['bdm'], canEditVar:true},
   bde:        {label:'BDE',         scope:'fr',   edit:false, modules:'all', editOwnPjp:true, canEnterVar:true},
   franchisee: {label:'Franchisee',  scope:'fr',   edit:false, modules:['p6','pnl','route','burn']},
@@ -718,7 +608,6 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
 function render(v){
   if(v==='access')renderAccess();
   if(v==='employee')renderEmployee();
-  if(v==='hierarchy')renderHierarchy();
   if(v==='franchise')renderFranchise();
   if(v==='position')renderPosition();
   if(v==='geography')renderGeography();
@@ -726,6 +615,7 @@ function render(v){
   if(v==='users')renderUsers();
   if(v==='bulk')renderBulk();
   if(v==='guarantee')renderGuarantee();
+  if(v==='monthburn')renderMonthBurn();
   if(v==='routeoutlet')renderRouteOutlet();
   if(v==='holidays')renderHolidays();
   if(v==='datasync')renderDataSync();
@@ -832,250 +722,6 @@ function renderEmployee(){
     <div class="note">📌 <b>BDE</b> = tag exactly one franchise. <b>Launch Executive</b> = tag multiple. <b>BDM / State Head / NSM</b> inherit franchises automatically from the people below them — no manual tagging needed.</div>
   </div>`;
 }
-
-/* ══════════════════════════════════════════════════════════════════════
-   HIERARCHY TREE (Masters tab) — NSM → State Heads → BDMs → BDEs → Franchisees
-   Click a person to change who they report to. Re-mapping updates the
-   underlying franchise BDM / State-Head fields so it flows everywhere.
-   ────────────────────────────────────────────────────────────────────── */
-let HIER_EDIT=null;         // {kind, key} currently being remapped (inline dropdown)
-const HIER_EXP=new Set();   // expanded node keys
-function shortPerson(id){ if(!id||id==='-')return '—'; return id.split('_')[0].replace(/([a-z])([A-Z])/g,'$1 $2'); }
-function hierStateOfBdm(bdm){ const f=BURNFR.find(x=>x.bdm===bdm); return f?f.state:null; }
-function hierToggle(k){HIER_EXP.has(k)?HIER_EXP.delete(k):HIER_EXP.add(k);renderHierarchy();}
-
-/* one box in the org chart. accent: css var. kind/key drive the ⇄ reassign dropdown. */
-function hierBox(opts){
-  const {title,sub,accent,chip,count,expandKey,hasKids,reassignKind,reassignKey,editing}=opts;
-  const open=expandKey&&HIER_EXP.has(expandKey);
-  const caret=hasKids?`<span style="color:${accent};font-size:11px">${open?'▼':'▶'}</span>`:'';
-  const clickable=hasKids?`onclick="hierToggle('${jsq(expandKey)}')" style="cursor:pointer"`:'';
-  return `<div class="hbox" style="--hac:${accent}">
-    <div class="hbox-in" ${clickable}>
-      <div style="display:flex;align-items:center;gap:7px">
-        ${caret}
-        <div>
-          <div class="hbox-t">${title}</div>
-          ${sub?`<div class="hbox-s">${sub}</div>`:''}
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;margin-top:7px">
-        ${chip?`<span class="chip" style="background:${accent}22;color:${accent};font-size:9px;border:none">${chip}</span>`:''}
-        ${count!=null?`<span class="chip mute" style="font-size:9px">${count}</span>`:''}
-        ${reassignKind?`<button class="btn sm edit-allow keepenabled" style="font-size:10px;padding:2px 6px;margin-left:auto" onclick="event.stopPropagation();hierRemap('${reassignKind}','${jsq(reassignKey)}')" title="Reassign">⇄</button>`:''}
-      </div>
-      ${editing?hierInlineDropdown(reassignKind,reassignKey):''}
-    </div>
-  </div>`;
-}
-/* the inline reassign dropdown shown inside a box when its ⇄ is clicked */
-function hierInlineDropdown(kind,key){
-  if(kind==='bdm'){
-    const states=[...new Set(BURNFR.map(f=>f.state))].sort();
-    const cur=hierStateOfBdm(key);
-    return `<div class="edit-allow" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line2)" onclick="event.stopPropagation()">
-      <div style="font-size:10px;color:var(--txt-mute);margin-bottom:4px">Move to State Head:</div>
-      <select class="cellsel" id="hierBdmState" style="width:100%;font-size:11px">${states.map(s=>`<option ${s===cur?'selected':''}>${s}</option>`).join('')}</select>
-      <div style="display:flex;gap:5px;margin-top:6px">
-        <button class="btn sm primary" style="font-size:10px;padding:3px 8px" onclick="hierApplyBdmState()">Apply</button>
-        <button class="btn sm" style="font-size:10px;padding:3px 8px" onclick="HIER_EDIT=null;renderHierarchy()">✕</button>
-      </div></div>`;
-  }
-  if(kind==='fr'){
-    const f=BURNFR.find(x=>x.name===key);if(!f)return '';
-    // BDMs available: from this state's BDM employees + any BDM already on franchises in this state
-    const stBdmsFromEmp=EMP.filter(e=>e.pos==='BDM'&&e.state===f.state).map(e=>e.name);
-    const stBdmsFromFr=BURNFR.filter(x=>x.state===f.state).map(x=>x.bdm).filter(b=>b&&b!=='-');
-    const bdms=[...new Set([...stBdmsFromEmp,...stBdmsFromFr])].sort();
-    // BDEs available: this state's BDE employees
-    const bdes=[...new Set(EMP.filter(e=>e.pos==='BDE'&&e.state===f.state).map(e=>e.name))].sort();
-    const curBde=(f.bde&&f.bde!=='-')?shortPerson(f.bde):'';
-    return `<div class="edit-allow" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line2)" onclick="event.stopPropagation()">
-      <div style="font-size:10px;color:var(--txt-mute);margin-bottom:4px">BDE (person on this franchise):</div>
-      <select class="cellsel" id="hierFrBde" style="width:100%;font-size:11px" onchange="hierToggleNew('hierFrBde','bdeNewWrap')">
-        <option value="-" ${(!f.bde||f.bde==='-')?'selected':''}>— Vacant (none) —</option>
-        ${bdes.map(b=>`<option value="${escAttr(b)}" ${b===curBde?'selected':''}>${b}</option>`).join('')}
-        ${(curBde&&!bdes.includes(curBde))?`<option value="${escAttr(curBde)}" selected>${curBde} (current)</option>`:''}
-        <option value="__NEW__">＋ Add new person…</option>
-      </select>
-      <div id="bdeNewWrap" style="display:none;margin-top:5px">
-        <input id="hierFrBdeNew" class="cellinp" style="width:100%;font-size:11px" placeholder="New BDE name">
-      </div>
-      <div style="font-size:10px;color:var(--txt-mute);margin:8px 0 4px">Reports to (BDM):</div>
-      <select class="cellsel" id="hierFrBdm" style="width:100%;font-size:11px" onchange="hierToggleNew('hierFrBdm','bdmNewWrap')">
-        <option value="-" ${(!f.bdm||f.bdm==='-')?'selected':''}>Direct to State Head (no BDM)</option>
-        ${bdms.map(b=>`<option value="${escAttr(b)}" ${b===f.bdm?'selected':''}>${shortPerson(b)}</option>`).join('')}
-        <option value="__NEW__">＋ Add new person…</option>
-      </select>
-      <div id="bdmNewWrap" style="display:none;margin-top:5px">
-        <input id="hierFrBdmNew" class="cellinp" style="width:100%;font-size:11px" placeholder="New BDM name">
-      </div>
-      <div style="display:flex;gap:5px;margin-top:8px">
-        <button class="btn sm primary" style="font-size:10px;padding:3px 8px" onclick="hierApplyFr()">Apply</button>
-        <button class="btn sm" style="font-size:10px;padding:3px 8px" onclick="HIER_EDIT=null;renderHierarchy()">✕</button>
-      </div></div>`;
-  }
-  return '';
-}
-/* show/hide the 'new name' text box when '+ Add new person' is chosen */
-function hierToggleNew(selId,wrapId){
-  const sel=$('#'+selId);const wrap=$('#'+wrapId);if(!sel||!wrap)return;
-  wrap.style.display=(sel.value==='__NEW__')?'block':'none';
-}
-/* a horizontal row of children with a connector line above */
-function hierChildren(inner){
-  if(!inner)return '';
-  return `<div class="hkids"><div class="hkids-row">${inner}</div></div>`;
-}
-function isEd(kind,key){return HIER_EDIT&&HIER_EDIT.kind===kind&&HIER_EDIT.key===key;}
-
-function renderHierarchy(){
-  const nsmUser=USERS.find(u=>u.role==='nsm');
-  const nsmName=nsmUser?(nsmUser.name||'NSM'):'NSM';
-  const states=[...new Set(BURNFR.map(f=>f.state))].sort();
-  const shOf=st=>{const u=USERS.find(x=>x.role==='statehead'&&x.scopeVal===st);return u?(u.name||u.user):null;};
-
-  // build state boxes (each expands to BDMs + direct franchises)
-  const stateBoxes=states.map(st=>{
-    const stFrs=BURNFR.filter(f=>f.state===st);
-    const sh=shOf(st);
-    const bdms=[...new Set(stFrs.map(f=>f.bdm).filter(b=>b&&b!=='-'))].sort();
-    const directFrs=stFrs.filter(f=>!f.bdm||f.bdm==='-');
-    const stKey='ST:'+st;
-    let kids='';
-    if(HIER_EXP.has(stKey)){
-      // BDM boxes
-      const bdmBoxes=bdms.map(bdm=>{
-        const bdmFrs=stFrs.filter(f=>f.bdm===bdm);
-        const bdmKey='BDM:'+bdm;
-        let bdmKids='';
-        if(HIER_EXP.has(bdmKey)){
-          bdmKids=hierChildren(bdmFrs.map(f=>{
-            const realBde=(f.bde&&f.bde!=='-'&&!/_/.test(f.bde)&&f.bde.length<=18);
-            return hierBox({
-              title:realBde?shortPerson(f.bde):'BDE: Vacant',
-              sub:f.name,accent:realBde?'var(--green)':'var(--amber)',chip:realBde?'BDE':'⚠ no BDE',
-              reassignKind:'fr',reassignKey:f.name,editing:isEd('fr',f.name)
-            });
-          }).join(''));
-        }
-        return hierBox({
-          title:shortPerson(bdm),accent:'var(--violet)',chip:'BDM',count:bdmFrs.length+' fr',
-          expandKey:bdmKey,hasKids:bdmFrs.length>0,
-          reassignKind:'bdm',reassignKey:bdm,editing:isEd('bdm',bdm)
-        })+bdmKids;
-      }).join('');
-      // direct-to-SH franchises box group
-      let directBox='';
-      if(directFrs.length){
-        const dKey='DIR:'+st;
-        let dKids='';
-        if(HIER_EXP.has(dKey)){
-          dKids=hierChildren(directFrs.map(f=>{
-            const realBde=(f.bde&&f.bde!=='-'&&!/_/.test(f.bde)&&f.bde.length<=18);
-            return hierBox({
-              title:realBde?shortPerson(f.bde):'BDE: Vacant',
-              sub:f.name,accent:realBde?'var(--green)':'var(--amber)',chip:realBde?'BDE':'⚠ no BDE',
-              reassignKind:'fr',reassignKey:f.name,editing:isEd('fr',f.name)
-            });
-          }).join(''));
-        }
-        directBox=hierBox({title:'Direct to SH',accent:'var(--marble)',chip:'no BDM',count:directFrs.length,
-          expandKey:dKey,hasKids:directFrs.length>0})+dKids;
-      }
-      kids=hierChildren(bdmBoxes+directBox);
-    }
-    return hierBox({
-      title:st,sub:sh?('SH: '+sh.split('—')[0].trim()):'⚠ no State Head',
-      accent:sh?'var(--marble)':'var(--red)',chip:'State',count:stFrs.length+' fr',
-      expandKey:stKey,hasKids:stFrs.length>0
-    })+kids;
-  }).join('');
-
-  const nsmKey='NSM';
-  const nsmKids=HIER_EXP.has(nsmKey)?hierChildren(stateBoxes):'';
-  const nsmBox=hierBox({
-    title:nsmName.split('(')[0].trim(),accent:'var(--green)',chip:'NSM · national',count:BURNFR.length+' fr',
-    expandKey:nsmKey,hasKids:true
-  })+nsmKids;
-
-  $('#v-hierarchy').innerHTML=`
-  <style>
-    .htree{padding:22px 14px;overflow-x:auto}
-    .htree-root{display:flex;flex-direction:column;align-items:center;min-width:max-content;margin:0 auto}
-    .hbox{display:inline-flex;flex-direction:column;align-items:center;position:relative}
-    .hbox-in{background:var(--panel);border:1.5px solid var(--hac,var(--line2));border-radius:11px;padding:10px 13px;min-width:130px;max-width:190px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
-    .hbox-t{font-weight:700;font-size:13px;color:var(--txt);line-height:1.2}
-    .hbox-s{font-size:10px;color:var(--txt-mute);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px}
-    .hkids{display:flex;flex-direction:column;align-items:center;position:relative;margin-top:22px}
-    .hkids::before{content:'';position:absolute;top:-22px;left:50%;width:2px;height:22px;background:var(--line2)}
-    .hkids-row{display:flex;gap:20px;position:relative;padding-top:22px}
-    .hkids-row::before{content:'';position:absolute;top:0;left:10%;right:10%;height:2px;background:var(--line2)}
-    .hkids-row>.hbox::before{content:'';position:absolute;top:-22px;left:50%;width:2px;height:22px;background:var(--line2)}
-    .hkids-row>.hbox{align-self:flex-start}
-  </style>
-  <div class="panel">
-    <div class="panel-h"><h3>🌳 Hierarchy tree</h3><span class="hint">Click a box to expand its branch · ⇄ reassigns who reports to whom</span></div>
-    <div style="padding:10px 18px;display:flex;gap:8px">
-      <button class="btn sm keepenabled" onclick="hierExpandAll()">⊕ Expand all</button>
-      <button class="btn sm keepenabled" onclick="HIER_EXP.clear();HIER_EDIT=null;renderHierarchy()">⊖ Collapse all</button>
-    </div>
-    <div class="htree"><div class="htree-root">${nsmBox}</div></div>
-    <div class="note">📌 <b>NSM → State Head → BDM → BDE/Franchisee</b>, top to bottom. Click any box to open its branch. The ⇄ button re-maps a person — it rewrites the franchise data so Burn, PJP, Route Potential and every report update together.</div>
-  </div>`;
-}
-function hierExpandAll(){
-  HIER_EXP.add('NSM');
-  [...new Set(BURNFR.map(f=>f.state))].forEach(st=>{
-    HIER_EXP.add('ST:'+st);
-    HIER_EXP.add('DIR:'+st);
-  });
-  [...new Set(BURNFR.map(f=>f.bdm).filter(b=>b&&b!=='-'))].forEach(b=>HIER_EXP.add('BDM:'+b));
-  renderHierarchy();
-}
-function hierRemap(kind,key){
-  if(isEd(kind,key)){HIER_EDIT=null;}else{HIER_EDIT={kind,key};}
-  // make sure the branch containing this node is expanded so the dropdown is visible
-  renderHierarchy();
-}
-function hierApplyBdmState(){
-  const st=$('#hierBdmState').value;const bdm=HIER_EDIT.key;
-  BURNFR.forEach(f=>{if(f.bdm===bdm)f.state=st;});
-  FRS.forEach(f=>{if(f.bdm===bdm)f.state=st;});
-  HIER_EXP.add('ST:'+st);
-  hierSync();HIER_EDIT=null;renderHierarchy();toast('BDM moved to '+st,'ok');
-}
-function hierApplyFr(){
-  const fr=HIER_EDIT.key;
-  const f0=BURNFR.find(x=>x.name===fr)||{};
-  let newBde=$('#hierFrBde').value;
-  let newBdm=$('#hierFrBdm').value;
-  // handle "+ Add new person" for BDE
-  if(newBde==='__NEW__'){
-    const nm=($('#hierFrBdeNew').value||'').trim();
-    if(!nm){toast('Type the new BDE name','');return;}
-    newBde=nm;
-    if(!EMP.find(e=>e.name===nm&&e.pos==='BDE')) EMP.push({id:nextId++,name:nm,pos:'BDE',state:f0.state||'All',reportsTo:(newBdm&&newBdm!=='-'&&newBdm!=='__NEW__')?newBdm:'',frs:[fr]});
-  }
-  // handle "+ Add new person" for BDM
-  if(newBdm==='__NEW__'){
-    const nm=($('#hierFrBdmNew').value||'').trim();
-    if(!nm){toast('Type the new BDM name','');return;}
-    newBdm=nm;
-    if(!EMP.find(e=>e.name===nm&&e.pos==='BDM')) EMP.push({id:nextId++,name:nm,pos:'BDM',state:f0.state||'All',reportsTo:'',frs:[]});
-  }
-  const nbde=(newBde===''||newBde==='-')?'-':newBde;
-  const nbdm=(newBdm===''||newBdm==='-')?'-':newBdm;
-  const applyState=(nbdm!=='-')?hierStateOfBdm(nbdm):null;
-  BURNFR.forEach(f=>{if(f.name===fr){f.bde=nbde;f.bdm=nbdm;if(applyState)f.state=applyState;}});
-  FRS.forEach(f=>{if(f.name===fr){f.bde=nbde;f.bdm=nbdm;if(applyState)f.state=applyState;}});
-  hierSync();HIER_EDIT=null;renderHierarchy();toast('Franchise re-mapped','ok');
-}
-function hierSync(){
-  BURNROWS=BURNFR.map(f=>({fr:f.name,state:f.state,bdm:f.bdm,bde:f.bde,routes:f.routes,month:'2026-05',monthName:'May 2026',date:new Date(2026,4,1),spend:f.expense,share:f.share,burn:f.burn,target:f.expense,achieved:f.share}));
-  ROUTEDATA.routes.forEach(r=>{const f=BURNFR.find(x=>x.name===r.fr);if(f){r.state=f.state;r.bdm=f.bdm;}});
-  sbSaveDebounced();
-}
 function franchiseTag(e){
   if(e.pos==='BDE'){
     const cur=(e.frs||[])[0]||'';
@@ -1087,12 +733,12 @@ function franchiseTag(e){
   const n=visibleFranchises(e).length;
   return `<span class="chip aqua">${n} inherited</span>`;
 }
-function updEmp(id,k,v){const e=empById(id);e[k]=(k==='reports')?(v?+v:''):v;if(k==='pos'){if(v!=='BDE'&&v!=='Launch Executive')e.frs=[];}renderEmployee();sbSaveDebounced();}
-function setBdeFr(id,v){empById(id).frs=v?[v]:[];renderEmployee();sbSaveDebounced();}
+function updEmp(id,k,v){const e=empById(id);e[k]=(k==='reports')?(v?+v:''):v;if(k==='pos'){if(v!=='BDE'&&v!=='Launch Executive')e.frs=[];}renderEmployee();}
+function setBdeFr(id,v){empById(id).frs=v?[v]:[];renderEmployee();}
 function addEmp(){const name=$('#ne_name').value.trim();if(!name){toast('Enter a name','');return;}
   EMP.push({id:nextId++,name,pos:$('#ne_pos').value,state:$('#ne_state').value,reports:'',frs:[]});
-  $('#ne_name').value='';renderEmployee();sbSaveDebounced();toast('Employee added','ok');}
-function delEmp(id){EMP=EMP.filter(e=>e.id!=id);EMP.forEach(e=>{if(e.reports==id)e.reports='';});renderEmployee();sbSaveDebounced();toast('Removed','ok');}
+  $('#ne_name').value='';renderEmployee();toast('Employee added','ok');}
+function delEmp(id){EMP=EMP.filter(e=>e.id!=id);EMP.forEach(e=>{if(e.reports==id)e.reports='';});renderEmployee();toast('Removed','ok');}
 
 /* multi-franchise picker for Launch Exec */
 let multiId=null;
@@ -1107,7 +753,7 @@ function openMulti(id){multiId=id;const e=empById(id);
     </div></div>`;
   const d=document.createElement('div');d.id='multiModal';d.innerHTML=html;document.body.appendChild(d);
 }
-function saveMulti(){const e=empById(multiId);e.frs=[...document.querySelectorAll('#multiModal input:checked')].map(c=>c.value);closeMulti();renderEmployee();sbSaveDebounced();toast('Franchises assigned','ok');}
+function saveMulti(){const e=empById(multiId);e.frs=[...document.querySelectorAll('#multiModal input:checked')].map(c=>c.value);closeMulti();renderEmployee();toast('Franchises assigned','ok');}
 function closeMulti(){const m=$('#multiModal');if(m)m.remove();}
 
 /* ===== FRANCHISE MASTER ===== */
@@ -1258,25 +904,7 @@ function roleScopeOptions(role,sel){
 }
 function renderUsers(){
   const roleOpts=Object.keys(ROLES).map(r=>`<option value="${r}">${ROLES[r].label}</option>`).join('');
-  // map the Position filter (BDE/BDM/State Head/NSM/...) onto user roles
-  const POS2ROLE={'BDE':'bde','BDM':'bdm','State Head':'statehead','NSM':'nsm','Finance':'finance','Admin':'admin','Franchisee':'franchisee'};
-  const filtered=USERS.map((u,i)=>({u,i})).filter(({u})=>{
-    // position/role filter
-    if(FILTERS.pos!=='All'){
-      const wantRole=POS2ROLE[FILTERS.pos];
-      if(wantRole){ if(u.role!==wantRole) return false; }
-      else if((ROLES[u.role]?.label||u.role)!==FILTERS.pos) return false;
-    }
-    // state filter: match statehead scope, or a bdm/bde/franchisee whose franchise is in that state
-    if(FILTERS.state!=='All'){
-      if(u.role==='statehead'){ if(u.scopeVal!==FILTERS.state) return false; }
-      else if(u.role==='bdm'){ if(!BURNFR.some(f=>f.bdm===u.scopeVal&&f.state===FILTERS.state)) return false; }
-      else if(u.role==='bde'||u.role==='franchisee'){ const f=BURNFR.find(x=>x.name===u.scopeVal); if(!f||f.state!==FILTERS.state) return false; }
-      else return false; // admin/nsm/finance are national — hide when a specific state is chosen
-    }
-    return true;
-  });
-  const rows=filtered.map(({u,i})=>{
+  const rows=USERS.map((u,i)=>{
     const r=ROLES[u.role]||{label:u.role};
     return `<tr>
       <td style="font-weight:600;color:var(--txt)">${u.user}</td>
@@ -1292,12 +920,12 @@ function renderUsers(){
   }).join('');
   $('#v-users').innerHTML=`
   <div class="panel">
-    <div class="panel-h"><h3>👥 Users &amp; Logins <span class="chip mute">${filtered.length}${filtered.length!==USERS.length?' of '+USERS.length:''}</span></h3>
+    <div class="panel-h"><h3>👥 Users &amp; Logins <span class="chip mute">${USERS.length}</span></h3>
       <button class="btn sm primary edit-allow keepenabled" onclick="userNew()">＋ Add user</button>
     </div>
     <div class="tbl-scroll"><table>
       <thead><tr><th>User ID</th><th>Password</th><th>Role</th><th>Scope</th><th>Name</th><th>Actions</th></tr></thead>
-      <tbody>${rows||'<tr><td colspan="6" style="text-align:center;color:var(--txt-mute);padding:20px">No users match the current filter.</td></tr>'}</tbody>
+      <tbody>${rows}</tbody>
     </table></div>
     <div id="userForm"></div>
     <div class="note">📌 Create a login for each person. <b>Role</b> sets what they see &amp; can edit: <b>Admin</b> full · <b>NSM</b> all + lock/edit-unlock · <b>Finance</b> all + expense approval · <b>State Head</b>/<b>BDM</b> their scope + PJP approve · <b>BDE</b> own PJP + variable expense entry · <b>Franchisee</b> own franchise view-only. <b>Scope</b> ties them to a state / BDM / franchise.</div>
@@ -1331,9 +959,9 @@ function userSave(idx){
   if(!u||!p){toast('User ID and password required','');return;}
   const rec={user:u,pass:p,role,scopeVal:(ROLES[role].scope==='all'?'':sv),name:nm};
   if(idx>=0)USERS[idx]=rec; else {if(USERS.some(x=>x.user.toLowerCase()===u.toLowerCase())){toast('User ID already exists','');return;}USERS.push(rec);}
-  userEditIdx=-2;$('#userForm').innerHTML='';renderUsers();sbSaveDebounced();toast('User saved ✓','ok');
+  userEditIdx=-2;$('#userForm').innerHTML='';renderUsers();toast('User saved ✓','ok');
 }
-function userDelete(i){if(USERS[i].user==='admin')return;if(!confirm('Delete user '+USERS[i].user+'?'))return;USERS.splice(i,1);renderUsers();sbSaveDebounced();toast('User deleted','');}
+function userDelete(i){if(USERS[i].user==='admin')return;if(!confirm('Delete user '+USERS[i].user+'?'))return;USERS.splice(i,1);renderUsers();toast('User deleted','');}
 
 
 /* ═══════════════ BULK UPDATE (master import via Excel) ═══════════════ */
@@ -1371,7 +999,7 @@ function renderBulk(){
           <div style="font-size:11px;color:var(--aqua);margin-bottom:12px"><b>Columns:</b> ${c.cols}</div>
           <div style="display:flex;gap:8px">
             <button class="btn sm keepenabled edit-allow" onclick="bulkTemplate('${c.id}')">⤓ Template</button>
-            <label class="btn sm primary keepenabled edit-allow" style="cursor:pointer;margin:0">⤒ Upload<input type="file" accept=".xlsx" style="display:none" onchange="bulkUpload('${c.id}',this.files[0]);this.value=''"></label>
+            <label class="btn sm primary keepenabled edit-allow" style="cursor:pointer;margin:0">⤒ Upload<input type="file" accept=".xlsx" style="display:none" onchange="bulkUpload('${c.id}',this.files[0])"></label>
           </div>
           <div id="bulk_status_${c.id}" style="font-size:11px;color:var(--txt-mute);margin-top:8px"></div>
         </div>`).join('')}
@@ -1405,16 +1033,11 @@ function bulkUpload(kind,file){
       const ws=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
       const clean=rows.filter(r=>Object.values(r).some(v=>String(v).trim()!==''));
-      let result={}, liveLine='';
-      if(kind==='people'){result=bulkPeople(clean);liveLine=`People master now has <b>${EMP.filter(e=>['NSM','State Head','BDM'].includes(e.pos)).length}</b> NSM/State Head/BDM records`;}
-      if(kind==='franchise'){result=bulkFranchise(clean);liveLine=`Franchise master now has <b>${FRS.length}</b> franchises`;}
-      if(kind==='route'){result=bulkRoute(clean);liveLine=`Route master now has <b>${ROUTEDATA.routes.length}</b> routes`;}
-      if(kind==='outlet'){result=bulkOutlet(clean);liveLine=`Outlet master now has <b>${OUTLETS.length.toLocaleString('en-IN')}</b> outlets stored across all routes`;}
-      let warn='';
-      if(result.skipped)warn+=`<br><span style="color:var(--amber)">⚠ ${result.skipped} row(s) skipped — missing required column</span>`;
-      if(result.unmatchedRoutes)warn+=`<br><span style="color:var(--red)">✗ ${result.unmatchedOutlets} outlet(s) on ${result.unmatchedRoutes} route(s) didn't match any route in Route Master — check route names match exactly</span>`;
-      $('#bulk_status_'+kind).innerHTML=`<span style="color:var(--green)">✓ ${clean.length} rows in file processed</span><br>${liveLine}${warn}`;
-      sbSaveDebounced();
+      if(kind==='people')bulkPeople(clean);
+      if(kind==='franchise')bulkFranchise(clean);
+      if(kind==='route')bulkRoute(clean);
+      if(kind==='outlet')bulkOutlet(clean);
+      $('#bulk_status_'+kind).innerHTML='<span style="color:var(--green)">✓ '+clean.length+' rows imported</span>';
     }catch(err){$('#bulk_status_'+kind).innerHTML='<span style="color:var(--red)">Error: '+err.message+'</span>';}
   };
   reader.readAsArrayBuffer(file);
@@ -1424,9 +1047,8 @@ function col(r,names){for(const n of names){for(const k of Object.keys(r)){if(k.
 function bulkPeople(rows){
   const taken=new Set(USERS.map(u=>u.user));
   const roleMap={'nsm':'nsm','state head':'statehead','statehead':'statehead','bdm':'bdm','finance':'finance','admin':'admin'};
-  let skipped=0;
   rows.forEach(r=>{
-    const name=col(r,['name']); if(!name){skipped++;return;}
+    const name=col(r,['name']); if(!name)return;
     const roleRaw=(col(r,['role'])||'').toString().toLowerCase().trim();
     const role=roleMap[roleRaw]||'bdm';
     const state=col(r,['state']);
@@ -1438,17 +1060,15 @@ function bulkPeople(rows){
     const user=uniqUser(prefix+'_'+slugId(name).slice(0,6),taken);
     USERS.push({user,pass:genPass(prefix,name),role,scopeVal:(role==='statehead'?state:(role==='bdm'?name:'')),name});
   });
-  return {skipped};
 }
 function bulkFranchise(rows){
   FRS=[]; BURNFR.length=0;
-  // keep core users by ROLE (admin/finance/nsm) so a People-Master upload's NSM/Finance logins survive — not by hardcoded username, which only matched the original seed data
-  USERS=USERS.filter(u=>['admin','finance','nsm'].includes(u.role));
+  // keep only core users (admin/nsm/finance/launch) — wipe all role-scoped logins to rebuild fresh
+  USERS=USERS.filter(u=>['admin','finance'].includes(u.role)||['admin','nsm','launch','finance'].includes(u.user));
   const taken=new Set(USERS.map(u=>u.user));
   const seenBdm=new Set(), seenSh=new Set();
-  let skipped=0;
   rows.forEach(r=>{
-    const fr=col(r,['franchise']); if(!fr){skipped++;return;}
+    const fr=col(r,['franchise']); if(!fr)return;
     const state=col(r,['state']), bdm=col(r,['bdm'])||'-', sh=col(r,['state head','statehead'])||'-', bde=col(r,['bde'])||'-';
     const guar=+col(r,['monthly guarantee','guarantee'])||0, fixed=+col(r,['monthly fixed','fixed'])||0;
     FRS.push({name:fr,state,bdm,bde,status:'Active'});
@@ -1469,61 +1089,140 @@ function bulkFranchise(rows){
       seenBdm.add(bdm);
       const id=Math.max(0,...EMP.map(e=>e.id||0))+1;
       if(!EMP.find(e=>e.name===bdm&&e.pos==='BDM'))EMP.push({id,name:bdm,pos:'BDM',state,reportsTo:sh});
-      if(!USERS.find(u=>u.role==='bdm'&&u.scopeVal===bdm)){
-        const ub=uniqUser('bdm_'+slugId(bdm).slice(0,6),taken);
-        USERS.push({user:ub,pass:genPass('bdm',bdm),role:'bdm',scopeVal:bdm,name:bdm+' (BDM)'});
-      }
+      const ub=uniqUser('bdm_'+slugId(bdm).slice(0,6),taken);
+      USERS.push({user:ub,pass:genPass('bdm',bdm),role:'bdm',scopeVal:bdm,name:bdm+' (BDM)'});
     }
     // State Head login (once per SH name)
     if(sh&&sh!=='-'&&!seenSh.has(sh)){
       seenSh.add(sh);
       const id=Math.max(0,...EMP.map(e=>e.id||0))+1;
       if(!EMP.find(e=>e.name===sh&&e.pos==='State Head'))EMP.push({id,name:sh,pos:'State Head',state,reportsTo:'NSM'});
-      if(!USERS.find(u=>u.role==='statehead'&&u.scopeVal===state)){
-        const us=uniqUser('sh_'+slugId(state).slice(0,6),taken);
-        USERS.push({user:us,pass:genPass('sh',sh),role:'statehead',scopeVal:state,name:sh+' — '+state+' State Head'});
-      }
+      const us=uniqUser('sh_'+slugId(state).slice(0,6),taken);
+      USERS.push({user:us,pass:genPass('sh',sh),role:'statehead',scopeVal:state,name:sh+' — '+state+' State Head'});
     }
   });
   STATES=[...new Set(FRS.map(f=>f.state))];
-  // rebuild BURNROWS (Burn Dashboard) from the fresh BURNFR — was previously left stale after a Franchise re-upload
-  BURNROWS=BURNFR.map(f=>({fr:f.name,state:f.state,bdm:f.bdm,bde:f.bde,routes:f.routes,month:'2026-05',monthName:'May 2026',date:new Date(2026,4,1),spend:f.expense,share:f.share,burn:f.burn,target:f.expense,achieved:f.share}));
-  return {skipped};
 }
 function bulkRoute(rows){
-  ROUTEDATA.routes.length=0;   // mutate in place — RP holds a reference to this same array; reassigning here would orphan RP and Route Potential would silently keep showing old data
-  let skipped=0;
+  ROUTEDATA.routes=[];
   rows.forEach(r=>{
-    const route=col(r,['route']); if(!route){skipped++;return;}
+    const route=col(r,['route']); if(!route)return;
     const fr=col(r,['franchise']), state=col(r,['state']);
     const F=BURNFR.find(x=>x.name===fr)||{};
     ROUTEDATA.routes.push({route,fr,state,bdm:F.bdm||'-',outlets:0,buy:0,nonbuy:0,buyPot:0,nonbuyPot:0,repeats:1});
     if(F.routes&&!F.routes.includes(route))F.routes.push(route);
   });
-  return {skipped};
 }
 function bulkOutlet(rows){
-  OUTLETS.length=0;
-  let skipped=0;
-  const routesSeen=new Set();
+  // aggregate outlets up to route-level counts/potentials
+  const byRoute={};
   rows.forEach(r=>{
-    const route=col(r,['route']); if(!route){skipped++;return;}
-    const fr=col(r,['franchise']), state=col(r,['state']);
-    const outlet=col(r,['outlet'])||'';
-    const beatPulse=col(r,['beat'])||'';
-    const target=+col(r,['target'])||0;
-    OUTLETS.push({state,fr,route,outlet,beatPulse,target});
-    routesSeen.add(route);
+    const route=col(r,['route']); if(!route)return;
+    const bp=(col(r,['beat'])||'').toString().toUpperCase();
+    const tgt=+col(r,['target'])||0;
+    const buying=!bp.includes('NON-PRODUCTIVE')&&bp.trim()!=='';
+    if(!byRoute[route])byRoute[route]={outlets:0,buy:0,nonbuy:0,buyPot:0,nonbuyPot:0};
+    const o=byRoute[route];o.outlets++;
+    if(buying){o.buy++;o.buyPot+=tgt;}else{o.nonbuy++;o.nonbuyPot+=tgt;}
   });
-  let unmatchedRoutes=0, unmatchedOutlets=0;
-  routesSeen.forEach(route=>{
-    const ok=recomputeRouteFromOutlets(route);
-    if(!ok){unmatchedRoutes++;unmatchedOutlets+=outletsFor(route).length;}
+  Object.keys(byRoute).forEach(rt=>{
+    const R=ROUTEDATA.routes.find(x=>x.route===rt);
+    if(R)Object.assign(R,byRoute[rt]);
   });
-  return {skipped,unmatchedRoutes,unmatchedOutlets};
 }
 
 function setFrPnlM(fr,k,v){const p=getFrPnl(guarMonth);if(!p[fr])p[fr]={guarantee:0,fixed:0};p[fr][k]=+v||0;renderGuarantee();}
+
+/* ═══════════ MONTHLY BURN MASTER (manual entry per month per franchise) ═══════════ */
+const BURN_BY_MONTH={};   /* { 'YYYY-MM': { frName: {spend, share} } }  burn = share − spend */
+function rebuildBurnRows(){
+  const rows=[];
+  Object.keys(BURN_BY_MONTH).forEach(m=>{
+    const md=BURN_BY_MONTH[m];
+    Object.keys(md).forEach(fr=>{
+      const f=BURNFR.find(x=>x.name===fr)||{}; const v=md[fr]||{};
+      const spend=+v.spend||0, share=+v.share||0;
+      rows.push({fr,state:f.state||'-',bdm:f.bdm||'-',bde:f.bde||'-',routes:f.routes||[],
+        month:m,monthName:(typeof monthLbl==='function'?monthLbl(m):m),
+        date:new Date(+m.slice(0,4),+m.slice(5,7)-1,1),
+        spend,share,burn:share-spend,target:spend,achieved:share});
+    });
+  });
+  BURNROWS=rows;
+}
+let mbMonth='2026-07';
+function mbGet(m){return BURN_BY_MONTH[m]||(BURN_BY_MONTH[m]={});}
+function mbSet(fr,k,val){const md=mbGet(mbMonth);if(!md[fr])md[fr]={spend:0,share:0};md[fr][k]=(val===''?0:(+val||0));}
+function mbCopyFrom(srcM){
+  const src=BURN_BY_MONTH[srcM]||{}; const md=mbGet(mbMonth);
+  BURNFR.forEach(f=>{const s=src[f.name]; md[f.name]={spend:(s?s.spend:f.expense)||0,share:(s?s.share:f.share)||0};});
+  renderMonthBurn();
+}
+function mbPrevMonthWithData(){
+  const ms=Object.keys(BURN_BY_MONTH).filter(m=>m<mbMonth && Object.keys(BURN_BY_MONTH[m]||{}).length).sort();
+  return ms.length?ms[ms.length-1]:null;
+}
+function mbPrefillPrev(){
+  const src=mbPrevMonthWithData();
+  if(!src){toast('No earlier month has data yet','warn');return;}
+  mbCopyFrom(src); toast('Prefilled from '+monthLbl(src),'ok');
+}
+function mbSave(){
+  rebuildBurnRows();
+  if(typeof cloudSave==='function'){try{cloudSave();}catch(e){}}
+  toast('Monthly burn saved for '+monthLbl(mbMonth),'ok');
+  renderMonthBurn();
+}
+function renderMonthBurn(){
+  const mopts=APP_MONTHS.map(k=>`<option value="${k}" ${k===mbMonth?'selected':''}>${monthLbl(k)}</option>`).join('');
+  const md=mbGet(mbMonth);
+  const inr=n=>{n=Math.round(n||0);return (n<0?'-₹':'₹')+Math.abs(n).toLocaleString('en-IN');};
+  let totS=0,totSh=0,totB=0;
+  const body=BURNFR.map(f=>{
+    const v=md[f.name]||{}; const sp=(v.spend===undefined?'':v.spend), sh=(v.share===undefined?'':v.share);
+    const burn=(+v.share||0)-(+v.spend||0);
+    totS+=(+v.spend||0);totSh+=(+v.share||0);totB+=burn;
+    const esc=f.name.replace(/'/g,"\\'");
+    return `<tr>
+      <td style="font-weight:600;color:var(--txt)">${f.name}</td>
+      <td style="text-align:right"><input class="cellinp" type="number" style="width:120px" value="${sp}" placeholder="0" oninput="mbSet('${esc}','spend',this.value)"></td>
+      <td style="text-align:right"><input class="cellinp" type="number" style="width:120px" value="${sh}" placeholder="0" oninput="mbSet('${esc}','share',this.value)"></td>
+      <td class="tnum" style="text-align:right;color:${burn<0?'var(--red)':'var(--green)'};font-weight:700">${inr(burn)}</td>
+      <td class="tnum" style="text-align:right;color:var(--violet)">${inr(shareTargetRs(f.name,mbMonth))}</td>
+    </tr>`;
+  }).join('');
+  $('#v-monthburn').innerHTML=`
+  <div class="panel">
+    <div class="panel-h"><h3>🔥 Monthly Burn — enter each month's actuals</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <select class="cellsel" onchange="mbMonth=this.value;renderMonthBurn()" style="min-width:150px">${mopts}</select>
+        <button class="btn sm" onclick="mbPrefillPrev()">📋 Prefill from last month</button>
+        <button class="btn primary sm edit-allow" onclick="mbSave()">💾 Save &amp; update dashboard</button>
+      </div>
+    </div>
+    <div class="tbl-scroll">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr>
+          <th>Franchise</th>
+          <th style="text-align:right">Company Spend ₹</th>
+          <th style="text-align:right">Company Share ₹</th>
+          <th style="text-align:right">Net Burn (share−spend)</th>
+          <th style="text-align:right">Share TARGET (${monthLbl(mbMonth)})</th>
+        </tr></thead>
+        <tbody>${body}</tbody>
+        <tfoot><tr style="border-top:2px solid var(--line2);font-weight:700">
+          <td>TOTAL · ${BURNFR.length} franchises</td>
+          <td class="tnum" style="text-align:right;color:var(--amber)">${inr(totS)}</td>
+          <td class="tnum" style="text-align:right;color:var(--aqua)">${inr(totSh)}</td>
+          <td class="tnum" style="text-align:right;color:${totB<0?'var(--red)':'var(--green)'}">${inr(totB)}</td>
+          <td></td>
+        </tr></tfoot>
+      </table>
+    </div>
+    <div class="note">📌 Enter <b>Company Spend</b> and <b>Company Share</b> for the selected month. <b>Net Burn = Share − Spend</b> (auto). <b>Share TARGET</b> = the reduction-plan goal for that month (from Reduction % settings). Click <b>Save</b> and the Burn Dashboard shows this month. May is your baseline. Nothing is coded — enter any month, any figure.</div>
+  </div>`;
+  if(SESSION&&!canEdit())setTimeout(applyReadOnly,20);
+}
 
 function setFrPnl(fr,k,v){const p=getFrPnl(curMonth);if(!p[fr])p[fr]={guarantee:0,fixed:0};p[fr][k]=+v||0;renderExpense();}
 
@@ -1583,106 +1282,21 @@ function fmtInr(n){return Math.round(n).toLocaleString('en-IN');}
 
 /* ===== ROUTES MASTER (editable, seeded from YOLO) ===== */
 let roFr = null;
-let roRoute = null;
-let RO_MODE = 'filter';   // 'drill' | 'filter'
-let RO_UNIT = 'cases';    // 'cases' | 'bottles'
-const ROEXP = new Set(['India']);
-const ROF = {state:'All'};
-function roPot(route){const rep=repeatsOf(route);const bpc=bpcOf(route.fr)||1;const buyBtl=route.buyPot*rep,nonbuyBtl=route.nonbuyPot*rep;return RO_UNIT==='cases'?{buy:buyBtl/bpc,nonbuy:nonbuyBtl/bpc}:{buy:buyBtl,nonbuy:nonbuyBtl};}
-function roAgg(rows){let a={outlets:0,buy:0,nonbuy:0,buyPot:0,nonbuyPot:0};rows.forEach(r=>{const p=roPot(r);a.outlets+=r.outlets||0;a.buy+=r.buy||0;a.nonbuy+=r.nonbuy||0;a.buyPot+=p.buy;a.nonbuyPot+=p.nonbuy;});return a;}
-function roToggle(key){ROEXP.has(key)?ROEXP.delete(key):ROEXP.add(key);renderRouteOutlet();}
-function roJump(fr){roFr=fr;roRoute=null;RO_MODE='filter';renderRouteOutlet();}
-function roHrow(label,key,depth,rows,expandable,open,icon,leafFr){
-  const a=roAgg(rows);
-  const pad=12+depth*22;
-  const caret=expandable?`<span style="display:inline-block;width:14px;color:var(--aqua)">${open?'▾':'▸'}</span>`:'<span style="display:inline-block;width:14px"></span>';
-  const bg=depth===0?'background:rgba(25,211,197,.06)':depth===1?'background:rgba(15,39,56,.5)':'';
-  const wt=depth<=1?'700':'600';
-  const click=leafFr?`roJump('${jsq(leafFr)}')`:`roToggle('${key.replace(/'/g,"\\'")}')`;
-  return `<tr class="clickable" style="${bg}" onclick="${click}">
-    <td style="padding-left:${pad}px;font-weight:${wt};color:var(--txt)">${caret} ${icon||''} ${label}</td>
-    <td style="text-align:right" class="tnum">${fmtN(a.outlets)}</td>
-    <td style="text-align:right" class="tnum"><span class="chip green">${fmtN(a.buy)}</span></td>
-    <td style="text-align:right" class="tnum"><span class="chip amber">${fmtN(a.nonbuy)}</span></td>
-    <td style="text-align:right" class="tnum" style="color:var(--green)">${fmtN(a.buyPot)}</td>
-    <td style="text-align:right" class="tnum" style="color:var(--violet)">${fmtN(a.nonbuyPot)}</td></tr>`;
-}
-function roDrillRows(fScope){
-  const rows=ROUTEDATA.routes.filter(r=>fScope.some(f=>f.name===r.fr));
-  let html=roHrow('India','India',0,rows,true,ROEXP.has('India'),'🇮🇳');
-  if(ROEXP.has('India')){
-    [...new Set(rows.map(r=>r.state))].sort().forEach(st=>{
-      const sRows=rows.filter(r=>r.state===st);const sKey='S:'+st;
-      html+=roHrow(st,sKey,1,sRows,true,ROEXP.has(sKey),'🗺');
-      if(ROEXP.has(sKey)){
-        const bdms=[...new Set(sRows.map(r=>r.bdm))].filter(b=>b&&b!=='-').sort();
-        const noBdm=sRows.filter(r=>!r.bdm||r.bdm==='-');
-        bdms.forEach(bd=>{
-          const bRows=sRows.filter(r=>r.bdm===bd);const bKey='B:'+st+':'+bd;
-          html+=roHrow('BDM · '+bd,bKey,2,bRows,true,ROEXP.has(bKey),'👤');
-          if(ROEXP.has(bKey)){[...new Set(bRows.map(r=>r.fr))].sort().forEach(fr=>{html+=roHrow(fr,'F:'+bKey+':'+fr,3,bRows.filter(r=>r.fr===fr),false,false,'🏪',fr);});}
-        });
-        [...new Set(noBdm.map(r=>r.fr))].sort().forEach(fr=>{html+=roHrow(fr+' (no BDM)','F:'+sKey+':'+fr,2,noBdm.filter(r=>r.fr===fr),false,false,'🏪',fr);});
-      }
-    });
-  }
-  return html;
-}
 function renderRouteOutlet(){
-  let fScope=FRS.filter(frPasses);
-  if(ROF.state!=='All')fScope=fScope.filter(f=>f.state===ROF.state);
+  const fScope=FRS.filter(frPasses);
   if(!roFr||!fScope.find(f=>f.name===roFr))roFr=(fScope[0]||FRS[0]||{name:''}).name;
   let totalRoutes=0;fScope.forEach(f=>totalRoutes+=routesFor(f.name).length);
   const frOpts=fScope.map(f=>`<option ${f.name===roFr?'selected':''}>${f.name}</option>`).join('');
-  const stOpts=['All',...new Set(FRS.map(f=>f.state))].sort().map(s=>`<option value="${s}" ${s===ROF.state?'selected':''}>${s==='All'?'All states':s}</option>`).join('');
   const rs=routesFor(roFr);
-  if(!roRoute||!rs.includes(roRoute))roRoute=rs[0]||null;
-  const os=roRoute?outletsFor(roRoute):[];
-  const routeOpts=rs.map(r=>`<option ${r===roRoute?'selected':''}>${escAttr(r)}</option>`).join('');
-  const unitLabel=RO_UNIT==='bottles'?'bottles':'cases';
-  let html=`
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-    <span class="chip aqua" style="font-size:12px">🏬 Routes &amp; Outlets <span class="chip mute" style="margin-left:6px">editable</span></span>
-    <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
-      <div class="modswitch" style="padding:3px">
-        <button class="modbtn ${RO_MODE==='drill'?'active':''}" style="padding:6px 13px;font-size:12px" onclick="RO_MODE='drill';renderRouteOutlet()">🌳 Drill-down</button>
-        <button class="modbtn ${RO_MODE==='filter'?'active':''}" style="padding:6px 13px;font-size:12px" onclick="RO_MODE='filter';renderRouteOutlet()">🔍 Filter</button>
-      </div>
-      <div class="modswitch" style="padding:3px">
-        <button class="modbtn ${RO_UNIT==='cases'?'active':''}" style="padding:6px 14px;font-size:12px" onclick="RO_UNIT='cases';renderRouteOutlet()">Cases</button>
-        <button class="modbtn ${RO_UNIT==='bottles'?'active':''}" style="padding:6px 14px;font-size:12px" onclick="RO_UNIT='bottles';renderRouteOutlet()">Bottles</button>
-      </div>
-    </div>
-  </div>
+  $('#v-routeoutlet').innerHTML=`
   <div class="kpis">
     <div class="kpi" style="--accent:var(--violet)"><div class="kl">Total routes</div><div class="kv">${totalRoutes}</div></div>
-    <div class="kpi" style="--accent:var(--aqua)"><div class="kl">Franchises</div><div class="kv">${fScope.length}</div></div>
-    <div class="kpi" style="--accent:var(--green)"><div class="kl">${RO_MODE==='filter'?roFr+' routes':'Drill-down view'}</div><div class="kv">${RO_MODE==='filter'?rs.length:totalRoutes}</div></div>
-  </div>`;
-  if(RO_MODE==='drill'){
-    html+=`<div class="panel"><div class="tbl-scroll"><table>
-      <thead><tr><th>Level</th><th>Total outlets</th><th>Buying</th><th>Non-buying</th><th>Buying pot (${unitLabel})</th><th>Non-buying pot (${unitLabel})</th></tr></thead>
-      <tbody>${roDrillRows(fScope)}</tbody></table></div>
-      <div class="note">📌 Browse India → State → BDM → Franchise. Click a franchise row to jump into edit mode for it.</div></div>`;
-    $('#v-routeoutlet').innerHTML=html;
-    return;
-  }
-  html+=`
-  <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-    <span style="font-size:11px;color:var(--txt-mute);letter-spacing:.06em;text-transform:uppercase;font-weight:700">Filter</span>
-    <select class="fsel" onchange="ROF.state=this.value;roFr=null;roRoute=null;renderRouteOutlet()">${stOpts}</select>
-    <select class="fsel" onchange="roFr=this.value;roRoute=null;renderRouteOutlet()">${frOpts}</select>
+    <div class="kpi" style="--accent:var(--aqua)"><div class="kl">Franchises</div><div class="kv">${FRS.length}</div></div>
+    <div class="kpi" style="--accent:var(--green)"><div class="kl">${roFr} routes</div><div class="kv">${rs.length}</div></div>
   </div>
   <div class="panel">
-    <div class="panel-h"><h3>🛣 Route master <span class="chip mute">editable</span></h3></div>
-    ${(()=>{const a=roAgg(ROUTEDATA.routes.filter(r=>r.fr===roFr));return `
-    <div class="kpis" style="padding:0 18px 14px">
-      <div class="kpi" style="--accent:var(--aqua)"><div class="kl">Total outlets</div><div class="kv">${a.outlets}</div></div>
-      <div class="kpi" style="--accent:var(--green)"><div class="kl">Buying</div><div class="kv">${a.buy}</div></div>
-      <div class="kpi" style="--accent:var(--amber)"><div class="kl">Non-buying</div><div class="kv">${a.nonbuy}</div></div>
-      <div class="kpi" style="--accent:var(--green)"><div class="kl">Buying potential (${unitLabel})</div><div class="kv">${fmtN(a.buyPot)}</div></div>
-      <div class="kpi" style="--accent:var(--violet)"><div class="kl">Non-buying potential (${unitLabel})</div><div class="kv">${fmtN(a.nonbuyPot)}</div></div>
-    </div>`;})()}
+    <div class="panel-h"><h3>🛣 Route master <span class="chip mute">editable</span></h3>
+      <select class="cellsel" onchange="roFr=this.value;renderRouteOutlet()" style="min-width:200px">${frOpts}</select></div>
     <div class="tbl-scroll"><table><thead><tr><th>#</th><th>Route name</th><th></th></tr></thead>
       <tbody>${rs.length?rs.map((r,i)=>`<tr>
         <td style="color:var(--txt-mute)">${i+1}</td>
@@ -1694,52 +1308,20 @@ function renderRouteOutlet(){
       <div class="field"><label>New route for ${roFr}</label><input id="nr_name" placeholder="e.g. Nagpur Central" style="min-width:240px"></div>
       <button class="btn primary" onclick="addRoute()">+ Add route</button>
     </div>
-    <div class="note">📌 Routes are <b>seeded from YOLO</b> but fully editable here. If YOLO shows 10 routes for Nagpur but there are really 4, delete the extras — your correction is what every process uses. Outlets &amp; their potential still flow live from YOLO under each route. Potential here uses the same route repeats × ${unitLabel} conversion as Route Potential.</div>
-  </div>
-  <div class="panel" style="margin-top:18px">
-    <div class="panel-h"><h3>🏬 Outlet master <span class="chip mute">editable</span></h3>
-      <select class="cellsel" onchange="roRoute=this.value;renderRouteOutlet()" style="min-width:260px">${rs.length?routeOpts:'<option>No routes yet</option>'}</select></div>
-    ${roRoute?(()=>{const R=ROUTEDATA.routes.find(r=>r.route===roRoute);const a=roAgg(R?[R]:[]);return `
-    <div class="kpis" style="padding:0 18px 14px">
-      <div class="kpi" style="--accent:var(--aqua)"><div class="kl">Total outlets</div><div class="kv">${a.outlets}</div></div>
-      <div class="kpi" style="--accent:var(--green)"><div class="kl">Buying</div><div class="kv">${a.buy}</div></div>
-      <div class="kpi" style="--accent:var(--amber)"><div class="kl">Non-buying</div><div class="kv">${a.nonbuy}</div></div>
-      <div class="kpi" style="--accent:var(--green)"><div class="kl">Buying potential (${unitLabel})</div><div class="kv">${fmtN(a.buyPot)}</div></div>
-      <div class="kpi" style="--accent:var(--violet)"><div class="kl">Non-buying potential (${unitLabel})</div><div class="kv">${fmtN(a.nonbuyPot)}</div></div>
-    </div>`;})():''}
-    <div class="tbl-scroll"><table><thead><tr><th>#</th><th>Outlet name</th><th>Beat Pulse</th><th>Target</th><th></th></tr></thead>
-      <tbody>${os.length?os.map((o,i)=>`<tr>
-        <td style="color:var(--txt-mute)">${i+1}</td>
-        <td><input class="cellinp" style="min-width:220px" value="${escAttr(o.outlet)}" onchange="editOutlet('${i}','outlet',this.value)"></td>
-        <td><select class="cellsel" onchange="editOutlet('${i}','beatPulse',this.value)">${BEAT_PULSE_OPTIONS.map(b=>`<option ${b===o.beatPulse?'selected':''}>${b}</option>`).join('')}</select></td>
-        <td><input class="cellinp aq" type="number" style="width:90px" value="${o.target}" onchange="editOutlet('${i}','target',this.value)"></td>
-        <td><button class="btn sm danger" onclick="delOutlet(${i})">✕</button></td></tr>`).join('')
-        :`<tr><td colspan="5" style="color:var(--txt-mute);padding:20px;text-align:center">${roRoute?'No outlets yet for this route — add below.':'Add a route first.'}</td></tr>`}</tbody>
-    </table></div>
-    ${roRoute?`<div class="addrow">
-      <div class="field"><label>New outlet for ${escAttr(roRoute)}</label><input id="no_name" placeholder="e.g. Sample Shop" style="min-width:200px"></div>
-      <div class="field"><label>Beat Pulse</label><select id="no_bp" style="min-width:160px">${BEAT_PULSE_OPTIONS.map(b=>`<option>${b}</option>`).join('')}</select></div>
-      <div class="field"><label>Target</label><input id="no_target" type="number" value="0" style="width:90px"></div>
-      <button class="btn primary" onclick="addOutlet()">+ Add outlet</button>
-    </div>`:''}
-    <div class="note">📌 Outlets are seeded from your Outlet Master upload but fully editable here. Buying = any Beat Pulse except Non-Productive Outlet. Editing here updates the route's buying/non-buying potential immediately, same numbers Route Potential uses (Target entered here is per-visit; toggle Cases/Bottles above to see it converted).</div>
+    <div class="note">📌 Routes are <b>seeded from YOLO</b> but fully editable here. If YOLO shows 10 routes for Nagpur but there are really 4, delete the extras — your correction is what every process uses. Outlets &amp; their potential still flow live from YOLO under each route.</div>
   </div>`;
-  $('#v-routeoutlet').innerHTML=html;
 }
 function escAttr(s){return (s||'').replace(/"/g,'&quot;');}
 function jsq(s){return (s||'').replace(/'/g,"\\'");}
-function renameRoute(fr,i,v){const rs=ROUTEDATA.routes.filter(r=>r.fr===fr);if(rs[i]){const old=rs[i].route;rs[i].route=v;OUTLETS.forEach(o=>{if(o.route===old)o.route=v;});if(roRoute===old)roRoute=v;}}
-function delRoute(fr,i){const rs=ROUTEDATA.routes.filter(r=>r.fr===fr);const t=rs[i];if(!t)return;const idx=ROUTEDATA.routes.indexOf(t);if(idx>=0)ROUTEDATA.routes.splice(idx,1);OUTLETS=OUTLETS.filter(o=>o.route!==t.route);if(roRoute===t.route)roRoute=null;renderRouteOutlet();toast('Route removed','ok');}
-function addRoute(){const n=$('#nr_name').value.trim();if(!n)return;const f=FRS.find(x=>x.name===roFr);ROUTEDATA.routes.push({route:n,fr:roFr,state:f?f.state:'',bdm:f?f.bdm:'-',outlets:0,buy:0,nonbuy:0,buyPot:0,nonbuyPot:0,repeats:4});$('#nr_name').value='';renderRouteOutlet();toast('Route added','ok');}
-function editOutlet(i,field,v){if(!roRoute)return;const os=outletsFor(roRoute);const o=os[+i];if(!o)return;o[field]=field==='target'?(+v||0):v;recomputeRouteFromOutlets(roRoute);renderRouteOutlet();sbSaveDebounced();}
-function delOutlet(i){if(!roRoute)return;const os=outletsFor(roRoute);const t=os[+i];if(!t)return;const idx=OUTLETS.indexOf(t);if(idx>=0)OUTLETS.splice(idx,1);recomputeRouteFromOutlets(roRoute);renderRouteOutlet();sbSaveDebounced();toast('Outlet removed','ok');}
-function addOutlet(){if(!roRoute)return;const name=$('#no_name').value.trim();if(!name)return;const bp=$('#no_bp').value;const tgt=+$('#no_target').value||0;const R=ROUTEDATA.routes.find(r=>r.route===roRoute);OUTLETS.push({state:R?R.state:'',fr:R?R.fr:roFr,route:roRoute,outlet:name,beatPulse:bp,target:tgt});recomputeRouteFromOutlets(roRoute);renderRouteOutlet();sbSaveDebounced();toast('Outlet added','ok');}
+function renameRoute(fr,i,v){ROUTES[fr][i]=v;}
+function delRoute(fr,i){ROUTES[fr].splice(i,1);renderRouteOutlet();toast('Route removed','ok');}
+function addRoute(){const n=$('#nr_name').value.trim();if(!n)return;if(!ROUTES[roFr])ROUTES[roFr]=[];ROUTES[roFr].push(n);$('#nr_name').value='';renderRouteOutlet();toast('Route added','ok');}
 
 function setEcon(fr,k,v){const e=getEcon(CF.month||curMonth);if(!e[fr]){const s=econForState(frStateOf(fr));e[fr]={ratio:s.glass,margin:s.margin};}e[fr][k]=+v;renderBottle();}
 
 function syncActive(){const e=getExp(curMonth);STATES.forEach(st=>{if(!e.states[st])e.states[st]={salary:0,travel:0,active:0};e.states[st].active=activeFrCount(st);});e.shared.active=FRS.filter(f=>f.status==='Active').length;renderExpense();toast('Active counts synced from Franchise master','ok');}
 
-function saveAll(){sbSave();toast('Masters saved to cloud ☁','ok');}
+function saveAll(){toast('Masters saved (in-session). Wire to Sheet/Supabase to persist.','ok');}
 
 
 
@@ -1867,7 +1449,7 @@ function liveCum(){let run=0;REDUCT_MONTHS.forEach(([k])=>{const v=+($('#rd_'+k)
 function saveReduct(){
   REDUCT_MONTHS.forEach(([k])=>{REDUCT[k]=+($('#rd_'+k)?.value||0);});
   GROWTH_MONTHS.forEach(([k])=>{GROWTH[k]=+($('#gr_'+k)?.value||100);});
-  closeReduct();renderBurn();sbSaveDebounced();toast('Targets saved — burn-kill + growth','ok');
+  closeReduct();renderBurn();toast('Targets saved — burn-kill + growth','ok');
 }
 function addGrowthRow(){
   // save current edits first
@@ -1982,8 +1564,8 @@ function renderBurn(){
   const inr=n=>{n=Math.round(n);const neg=n<0;return (neg?'-₹':'₹')+Math.abs(n).toLocaleString('en-IN');};
   $('#mod-burn').innerHTML=`
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-    <span class="chip aqua" style="font-size:12px">📅 May 2026 · real burn-report data</span>
-    <span style="font-size:12px;color:var(--txt-mute)">June &amp; July appear here once you add those months</span>
+    <span class="chip aqua" style="font-size:12px">📅 ${monthLbl(BF.month)}${BF.month==='2026-05'?' · baseline (real burn-report)':''}</span>
+    <span style="font-size:12px;color:var(--txt-mute)">Enter other months in Masters → 🔥 Monthly Burn</span>
     <button class="btn sm" style="margin-left:auto" onclick="openReductSettings()">⚙ Reduction % settings</button>
   </div>
   <div class="kpis">
@@ -1994,7 +1576,7 @@ function renderBurn(){
     <div class="kpi" style="--accent:var(--green)"><div class="kl">Cost Coverage</div><div class="kv ${a.achpct>=100?'burn-pos':a.achpct>=40?'':'burn-neg'}" style="${a.achpct>=40&&a.achpct<100?'color:var(--amber)':''}">${a.achpct.toFixed(0)}%</div><div class="kl" style="margin-top:6px;text-transform:none;letter-spacing:0;color:var(--txt-dim)">share covers ${a.achpct.toFixed(0)}% of spend</div></div>
   </div>
   <div class="panel">
-    <div class="panel-h"><h3>📉 Burn breakdown — May 2026</h3>
+    <div class="panel-h"><h3>📉 Burn breakdown — ${monthLbl(BF.month)}</h3>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         ${BURN_MODE==='filter'?`<div style="display:flex;gap:6px;flex-wrap:wrap">${['state','franchise','employee','route'].map(g=>`<button class="btn sm ${burnGrain===g?'primary':''}" onclick="burnGrain='${g}';renderBurn()">${g[0].toUpperCase()+g.slice(1)}</button>`).join('')}</div>`:''}
         <div class="modswitch" style="padding:3px">
@@ -2169,9 +1751,9 @@ function renderBottle(){
       <tbody>${rows.map(r=>`<tr>
         <td>${r.f.name}</td>
         <td style="color:var(--txt-mute)">${r.f.state}</td>
-        <td>${SESSION&&SESSION.role==='admin'?`<input class="cellinp aq" type="number" style="width:58px" value="${r.ec.ratio}" onchange="setEcon('${jsq(r.f.name)}','ratio',this.value)">`:`<span class="tnum">${r.ec.ratio}</span>`}</td>
-        <td>${SESSION&&SESSION.role==='admin'?`<input class="cellinp aq" type="number" step="0.5" style="width:70px" value="${r.ec.mGlass}" onchange="setEcon('${jsq(r.f.name)}','mGlass',this.value)">`:`<span class="tnum">${r.ec.mGlass}</span>`}</td>
-        <td>${SESSION&&SESSION.role==='admin'?`<input class="cellinp aq" type="number" step="0.5" style="width:70px" value="${r.ec.mPet}" onchange="setEcon('${jsq(r.f.name)}','mPet',this.value)">`:`<span class="tnum">${r.ec.mPet}</span>`}</td>
+        <td><input class="cellinp aq" type="number" style="width:58px" value="${r.ec.ratio}" onchange="setEcon('${jsq(r.f.name)}','ratio',this.value)"></td>
+        <td><input class="cellinp aq" type="number" step="0.5" style="width:70px" value="${r.ec.mGlass}" onchange="setEcon('${jsq(r.f.name)}','mGlass',this.value)"></td>
+        <td><input class="cellinp aq" type="number" step="0.5" style="width:70px" value="${r.ec.mPet}" onchange="setEcon('${jsq(r.f.name)}','mPet',this.value)"></td>
         <td class="tnum burn-neg">${inr(-r.burn)}</td>
         <td class="tnum" style="color:var(--amber)">${inr(r.fixed)}</td>
         <td class="tnum burn-neg" style="font-weight:700">${inr(r.target)}</td>
@@ -2211,7 +1793,7 @@ function repeatsOf(r){return REPEAT_OVR[r.route]!==undefined?REPEAT_OVR[r.route]
 function setRepeat(route,v){REPEAT_OVR[route]=Math.max(0,+v||0);renderRoute();}
 function setBPC(which,v){if(which==='g')GLASS_PC=+v||0;else PET_PC=+v||0;renderRoute();}
 function rpAgg(rows){let a={outlets:0,buy:0,nonbuy:0,buyP:0,nonbuyP:0,buyB:0,nonbuyB:0};
-  rows.forEach(r=>{const rep=repeatsOf(r);const bpc=bpcOf(r.fr)||1;const buyBtl=r.buyPot*rep,nonbuyBtl=r.nonbuyPot*rep;a.outlets+=r.outlets;a.buy+=r.buy;a.nonbuy+=r.nonbuy;a.buyB+=buyBtl;a.nonbuyB+=nonbuyBtl;a.buyP+=buyBtl/bpc;a.nonbuyP+=nonbuyBtl/bpc;});return a;}
+  rows.forEach(r=>{const rep=repeatsOf(r);const bpc=bpcOf(r.fr);a.outlets+=r.outlets;a.buy+=r.buy;a.nonbuy+=r.nonbuy;a.buyP+=r.buyPot*rep;a.nonbuyP+=r.nonbuyPot*rep;a.buyB+=r.buyPot*rep*bpc;a.nonbuyB+=r.nonbuyPot*rep*bpc;});return a;}
 function rpToggle(key){RPEXP.has(key)?RPEXP.delete(key):RPEXP.add(key);renderRoute();}
 
 /* franchise target analysis: target bottles vs potential bottles */
@@ -2266,26 +1848,21 @@ function cumKillPct(month){
   REDUCT_MONTHS.forEach(([k])=>{ if(k<=month) pct+=(+REDUCT[k]||0); });
   return pct; /* e.g. July => 40, Aug => 75, Sep => 100 */
 }
-/* the company-share target (₹) for a franchise in a given month */
+/* most recent month BEFORE `month` that has a manual Monthly-Burn entry for this franchise;
+   falls back to the May baseline if none entered yet */
+function mbPrevActual(fr,month){
+  const ms=Object.keys(BURN_BY_MONTH).filter(m=>m<month && BURN_BY_MONTH[m] && BURN_BY_MONTH[m][fr]).sort();
+  if(ms.length){const k=ms[ms.length-1];const v=BURN_BY_MONTH[k][fr];const share=+v.share||0,spend=+v.spend||0;return {share,spend,burn:share-spend,src:k};}
+  const b=burnBase(fr); return {share:b.share,spend:b.spend,burn:-(b.burn),src:'baseline'};
+}
+/* the company-share TARGET (₹) for a franchise in a given month
+   = previous month's actual share + (|previous month's actual burn| × this month's reduction %)
+   June actual → sets July target · July actual → sets August target · etc.               */
 function shareTargetRs(fr,month){
-  /* Phase 1 (burn-kill): cumulative — each step adds (prev-month actual burn × reduction%).
-     Phase 2 (growth): once burn is killed, target = spend + (spend × profit%).            */
-  const base=burnBase(fr);
-  // growth month? → target = spend × (growth% / 100)
-  if(typeof GROWTH!=='undefined' && GROWTH[month]!==undefined){
-    const sp=base.spend;
-    return Math.round(sp*((+GROWTH[month]||100)/100));   // 120% = spend + 20% profit
-  }
-  // phase 1: burn-kill cumulative
-  let runShare=base.share;
-  for(const [k] of REDUCT_MONTHS){
-    if(k>month)break;
-    const prev=prevMonthKey(k);
-    const pb=monthActualBurn(fr,prev);
-    const killBurn=Math.abs(Math.min(0,pb.burn));
-    runShare += killBurn*((+REDUCT[k]||0)/100);
-  }
-  return Math.round(runShare);
+  const prev=mbPrevActual(fr,month);
+  const red=(+REDUCT[month]||0)/100;
+  const burnMag=Math.abs(Math.min(0,prev.burn));
+  return Math.round(prev.share + burnMag*red);
 }
 /* how much extra this month alone adds (₹) */
 function shareKillThisMonth(fr,month){
@@ -2295,20 +1872,14 @@ function shareKillThisMonth(fr,month){
 
 function frTarget(fr){
   let ec=getEcon(ROUTEDATA.month)[fr];
-  if(!ec||ec.margin===undefined){const s=econForState(frStateOf(fr));ec={ratio:s.glass,margin:s.margin,mGlass:s.margin,mPet:s.margin};}
-  /* target = full amount to close the burn (matches Bottle Calculator): (company burn × 2) + fixed expense,
-     split by glass% into glass-rupees/PET-rupees, each ÷ its own margin → bottles */
-  const companyBurn=Math.abs(Math.min(0,burnOf(fr)));
-  const fixed=frFixedResolved(fr,ROUTEDATA.month);
-  const targetRs=companyBurn*2+fixed;
-  const gShareRs=targetRs*(ec.ratio/100), pShareRs=targetRs*(1-ec.ratio/100);
-  const glassB=ec.mGlass>0?Math.round(gShareRs/ec.mGlass):0;
-  const petB=ec.mPet>0?Math.round(pShareRs/ec.mPet):0;
-  const target=glassB+petB;                                    /* → bottles */
+  if(!ec||ec.margin===undefined){const s=econForState(frStateOf(fr));ec={ratio:s.glass,margin:s.margin};}
+  const blM=blendedMargin(ec);
+  const targetRs=shareTargetRs(fr,ROUTEDATA.month);   /* cumulative share target in ₹ */
+  const target=blM>0?Math.round(targetRs/blM):0;       /* → bottles */
   const bpc=(ec.ratio/100)*GLASS_PC+(1-ec.ratio/100)*PET_PC;   // blended bottles/case
   const targetCases=bpc>0?Math.round(target/bpc):0;
   const rows=RP.filter(r=>r.fr===fr);const a=rpAgg(rows);
-  const buyBtl=Math.round(a.buyB), nonbuyBtl=Math.round(a.nonbuyB);
+  const buyBtl=Math.round(a.buyP*bpc), nonbuyBtl=Math.round(a.nonbuyP*bpc);
   const shortage=Math.max(0,target-buyBtl);
   const afterNon=buyBtl+nonbuyBtl;
   let verdict,vcls;
@@ -2359,39 +1930,31 @@ function routeFilterRows(){
 }
 
 function renderRoute(){
-  const isFr = SESSION && SESSION.role==='franchisee';
-  const myFr = isFr ? SESSION.scopeVal : null;
   let html=`
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
     <span class="chip aqua" style="font-size:12px">🛣 Route Potential</span>
     <span style="display:flex;align-items:center;gap:6px"><span class="flabel">Month</span>
       <select class="fsel keepenabled" onchange="ROUTEDATA.month=this.value;renderRoute()">${APP_MONTHS.map(m=>`<option value="${m}" ${m===ROUTEDATA.month?'selected':''}>${monthName(m)}</option>`).join('')}</select>
     </span>
-    <span style="font-size:12px;color:var(--txt-mute)">${isFr?myFr+' · your routes':ROUTE_MODE==='drill'?'India → State → BDM → Franchise → Routes':'Filtered route view'} · target from burn-kill plan</span>
+    <span style="font-size:12px;color:var(--txt-mute)">${ROUTE_MODE==='drill'?'India → State → BDM → Franchise → Routes':'Filtered route view'} · target from burn-kill plan</span>
     <div style="margin-left:auto;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--txt-dim)">
-      ${isFr?'':`<div class="modswitch" style="padding:3px">
+      <div class="modswitch" style="padding:3px">
         <button class="modbtn ${ROUTE_MODE==='drill'?'active':''}" style="padding:6px 13px;font-size:12px" onclick="ROUTE_MODE='drill';renderRoute()">🌳 Drill-down</button>
         <button class="modbtn ${ROUTE_MODE==='filter'?'active':''}" style="padding:6px 13px;font-size:12px" onclick="ROUTE_MODE='filter';renderRoute()">🔍 Filter</button>
-      </div>`}
+      </div>
       <div class="modswitch" style="padding:3px">
         <button class="modbtn ${ROUTE_UNIT==='cases'?'active':''}" style="padding:6px 14px;font-size:12px" onclick="setRouteUnit('cases')">Cases</button>
         <button class="modbtn ${ROUTE_UNIT==='bottles'?'active':''}" style="padding:6px 14px;font-size:12px" onclick="setRouteUnit('bottles')">Bottles</button>
       </div>
-      ${SESSION&&SESSION.role==='admin'?`<span>Glass <input class="cellinp aq" type="number" style="width:50px" value="${GLASS_PC}" onchange="setBPC('g',this.value)"></span>
-      <span>PET <input class="cellinp aq" type="number" style="width:50px" value="${PET_PC}" onchange="setBPC('p',this.value)"></span>`:`<span style="color:var(--txt-mute);font-size:12px">Glass ${GLASS_PC} · PET ${PET_PC}</span>`}
+      <span>Glass <input class="cellinp aq" type="number" style="width:50px" value="${GLASS_PC}" onchange="setBPC('g',this.value)"></span>
+      <span>PET <input class="cellinp aq" type="number" style="width:50px" value="${PET_PC}" onchange="setBPC('p',this.value)"></span>
     </div>
   </div>
-  ${(!isFr&&ROUTE_MODE==='filter')?routeFilterBar():''}
+  ${ROUTE_MODE==='filter'?routeFilterBar():''}
   <div class="panel"><div class="tbl-scroll"><table>
-    <thead><tr><th>${isFr?'Route':(ROUTE_MODE==='filter'?'Route / Franchise':'Level')}</th><th>Total outlets</th><th>Buying</th><th>Non-buying</th><th>Buying pot (${ROUTE_UNIT})</th><th>Non-buying pot (${ROUTE_UNIT})</th><th>Target (${ROUTE_UNIT})</th><th>Shortage (${ROUTE_UNIT})</th></tr></thead>
+    <thead><tr><th>${ROUTE_MODE==='filter'?'Route / Franchise':'Level'}</th><th>Total outlets</th><th>Buying</th><th>Non-buying</th><th>Buying pot (${ROUTE_UNIT})</th><th>Non-buying pot (${ROUTE_UNIT})</th><th>Target (${ROUTE_UNIT})</th><th>Shortage (${ROUTE_UNIT})</th></tr></thead>
     <tbody>`;
-  if(isFr){
-    // franchisee: show the target banner + their route rows directly, no India/State/Franchise wrapping
-    const myRows=rpRows().filter(r=>r.fr===myFr);
-    html+=targetBanner(myFr,0);
-    myRows.forEach(r=>html+=routeRow(r,0));
-    if(!myRows.length)html+=`<tr><td colspan="8" style="text-align:center;color:var(--txt-mute);padding:24px">No routes found for your franchise.</td></tr>`;
-  } else if(ROUTE_MODE==='filter'){
+  if(ROUTE_MODE==='filter'){
     html+=routeFilterRows();
   } else {
   html+=hrow('India','India',0,rpRows(),true,RPEXP.has('India'),'🇮🇳');
@@ -2455,16 +2018,13 @@ function targetBanner(fr,depth){
 }
 function routeRow(r,depth){
   const pad=12+depth*22;const rep=repeatsOf(r);
-  const isC=ROUTE_UNIT==='cases';const bpc=bpcOf(r.fr)||1;
-  const buyBtl=r.buyPot*rep, nonbuyBtl=r.nonbuyPot*rep;
-  const buyVal=isC?buyBtl/bpc:buyBtl, nonbuyVal=isC?nonbuyBtl/bpc:nonbuyBtl;
   return `<tr><td style="padding-left:${pad}px;color:var(--txt-dim)"><span style="display:inline-block;width:14px"></span>🛣 ${prettyRoute(r.route)}
     <span style="margin-left:8px;font-size:11px;color:var(--txt-mute)">repeats</span> <input class="cellinp aq" type="number" style="width:48px;padding:3px 6px" value="${rep}" onclick="event.stopPropagation()" onchange="setRepeat('${r.route.replace(/'/g,"\\'")}',this.value)"></td>
     <td style="text-align:right" class="tnum">${fmtN(r.outlets)}</td>
     <td style="text-align:right" class="tnum">${fmtN(r.buy)}</td>
     <td style="text-align:right" class="tnum">${fmtN(r.nonbuy)}</td>
-    <td style="text-align:right" class="tnum" style="color:var(--green)">${fmtN(buyVal)}</td>
-    <td style="text-align:right" class="tnum" style="color:var(--violet)">${fmtN(nonbuyVal)}</td>
+    <td style="text-align:right" class="tnum" style="color:var(--green)">${fmtN(r.buyPot*rep)}</td>
+    <td style="text-align:right" class="tnum" style="color:var(--violet)">${fmtN(r.nonbuyPot*rep)}</td>
     <td></td><td></td></tr>`;
 }
 
@@ -2485,12 +2045,13 @@ let pjpFr=BURNFR[0]?.name||'', pjpMonth=TODAY_MONTH, pjpSelDay=null, pjpBdeView=
 function getDim(mo){const[y,m]=mo.split('-').map(Number);return new Date(y,m,0).getDate();}
 function pjpInr(n){n=Math.round(n);const neg=n<0;return(neg?'-₹':'₹')+Math.abs(n).toLocaleString('en-IN');}
 function pjpRoutes(fr){return(ROUTEDATA.routes||[]).filter(r=>r.fr===fr);}
-/* route reference: buying/non-buying outlet counts + potential in bottles (raw Target column is already in bottles, per visit) */
+function pjpBpcFn(fr){const ec=getEcon(pjpMonth)[fr]||{ratio:100};return(ec.ratio/100)*24+(1-ec.ratio/100)*30;}
+/* route reference: buying/non-buying outlet counts + potential in bottles */
 function pjpRouteObj(fr,routeName){return (ROUTEDATA.routes||[]).find(r=>r.fr===fr&&r.route===routeName)||null;}
 function pjpRouteRef(fr,routeName){
-  const r=pjpRouteObj(fr,routeName);
+  const r=pjpRouteObj(fr,routeName);const bpc=pjpBpcFn(fr);
   if(!r)return {buyCt:0,buyPot:0,nbCt:0,nbPot:0};
-  return {buyCt:r.buy||0,buyPot:Math.round(r.buyPot||0),nbCt:r.nonbuy||0,nbPot:Math.round(r.nonbuyPot||0)};
+  return {buyCt:r.buy||0,buyPot:Math.round((r.buyPot||0)*bpc),nbCt:r.nonbuy||0,nbPot:Math.round((r.nonbuyPot||0)*bpc)};
 }
 /* non-buying outlets still left to convert on a route this month (route NB pool minus already-planned NB, excluding the day being edited) */
 function pjpNbLeft(fr,data,routeName,exceptIdx){
@@ -2512,15 +2073,9 @@ function frHasBde(fr){
 }
 function pjpTgtBtl(fr){
   const bfr=BURNFR.find(f=>f.name===fr);if(!bfr)return 0;
-  let ec=getEcon(pjpMonth)[fr];
-  if(!ec||ec.margin===undefined){const s=econForState(frStateOf(fr));ec={ratio:s.glass,margin:s.margin,mGlass:s.margin,mPet:s.margin};}
-  const companyBurn=Math.abs(Math.min(0,bfr.burn));
-  const fixed=frFixedResolved(fr,pjpMonth);
-  const targetRs=companyBurn*2+fixed;
-  const gShareRs=targetRs*(ec.ratio/100), pShareRs=targetRs*(1-ec.ratio/100);
-  const glassB=(ec.mGlass||ec.margin||10.5)>0?Math.round(gShareRs/(ec.mGlass||ec.margin||10.5)):0;
-  const petB=(ec.mPet||ec.margin||10.5)>0?Math.round(pShareRs/(ec.mPet||ec.margin||10.5)):0;
-  return glassB+petB;
+  const ec=getEcon(pjpMonth)[fr];const mg=ec?ec.margin:10.5;
+  const targetRs=shareTargetRs(fr,pjpMonth);   /* cumulative share target ₹ */
+  return mg>0?Math.round(targetRs/mg):0;
 }
 
 const PJP_STORE={};
@@ -2572,8 +2127,6 @@ function renderPjp(){
     if(myFr){pjpBdeView=myFr;pjpFr=myFr;}
   }
   if(pjpBdeView){renderPjpBde();return;}
-  // manager roles land on the manager planner (cockpit + approvals + own plan)
-  if(SESSION&&['bdm','statehead','nsm'].includes(SESSION.role)&&PJP_VIEW==='status'){renderMgrPlanner();return;}
   if(PJP_VIEW==='employee'){renderPjpEmp();return;}
   if(PJP_VIEW==='adherence')renderPjpAdherence();
   else renderPjpTable();
@@ -2716,7 +2269,7 @@ let RPT_DATE=TODAY_DATE;   // single-date reports — opens on today
 let RPT_SCOPE={state:'All', fr:'All'};  // common WHO filter (also gated by role)
 
 /* ════════════════ EMPLOYEE REPORT ════════════════ */
-const ERP={pos:'BDE',person:null,month:null,mode:'perf',range:'month',anchor:null,unit:'btl',cMode:'drill',cExp:new Set(),fState:'All',fFr:'All',fEmp:'All'};
+const ERP={pos:'BDE',person:null,month:null,mode:'perf',range:'month',anchor:null,unit:'btl'};
 function erpMonths(){
   const s=new Set();
   Object.keys(DATASYNC).forEach(dk=>{const d=p6ParseDate(dk);if(d)s.add(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));});
@@ -2749,40 +2302,18 @@ function erpConvSet(rows){
   });
   return conv;
 }
-/* resolve a YOLO row's BDM + State Head consistently from the franchise master
-   (NOT from the messy raw 'Reporting To' text, which can hold multiple/incorrect names) */
-function erpFrOf(o){return BURNFR.find(x=>x.name===p6Fr(o.r));}
-function erpBdmOf(o){const f=erpFrOf(o);return (f&&f.bdm&&f.bdm!=='-')?f.bdm:null;}
-function erpStateHeadOf(o){
-  const f=erpFrOf(o);if(!f)return null;
-  const u=USERS.find(x=>x.role==='statehead'&&x.scopeVal===f.state);
-  return u?(u.name||u.user):(f.state+' (no State Head)');
-}
 function erpPersons(pos,rows){
   const set=new Set();
   if(pos==='BDE')rows.forEach(o=>{const n=p6Employee(o.r);if(n)set.add(n);});
-  else if(pos==='BDM')rows.forEach(o=>{const b=erpBdmOf(o);if(b)set.add(b);});
-  else if(pos==='State Head')rows.forEach(o=>{const s=erpStateHeadOf(o);if(s)set.add(s);});
+  else if(pos==='State Head')rows.forEach(o=>{const n=p6ReportTo(o.r);if(n)set.add(n);});
+  else if(pos==='BDM')rows.forEach(o=>{const f=BURNFR.find(x=>x.name===p6Fr(o.r));if(f&&f.bdm&&f.bdm!=='-')set.add(f.bdm);});
   return [...set].sort();
 }
 function erpRowsFor(pos,person,rows){
   if(pos==='BDE')return rows.filter(o=>p6Employee(o.r)===person);
-  if(pos==='BDM')return rows.filter(o=>erpBdmOf(o)===person);
-  if(pos==='State Head')return rows.filter(o=>erpStateHeadOf(o)===person);
+  if(pos==='State Head')return rows.filter(o=>p6ReportTo(o.r)===person);
+  if(pos==='BDM')return rows.filter(o=>{const f=BURNFR.find(x=>x.name===p6Fr(o.r));return f&&f.bdm===person;});
   return [];
-}
-/* children of a person for drill-down: State Head → its BDMs, BDM → its BDEs */
-function erpChildrenOf(pos,person,rows){
-  const set=new Set();
-  if(pos==='State Head'){ // → BDMs under this State Head
-    rows.filter(o=>erpStateHeadOf(o)===person).forEach(o=>{const b=erpBdmOf(o);if(b)set.add(b);});
-    return {childPos:'BDM',names:[...set].sort()};
-  }
-  if(pos==='BDM'){ // → BDEs under this BDM
-    rows.filter(o=>erpBdmOf(o)===person).forEach(o=>{const n=p6Employee(o.r);if(n)set.add(n);});
-    return {childPos:'BDE',names:[...set].sort()};
-  }
-  return {childPos:null,names:[]};
 }
 function erpSchedFor(pos,rows,mo){
   if(pos!=='BDE')return null; // plan-based scheduled only wired for BDE plans so far
@@ -2803,7 +2334,7 @@ function erpMetrics(pos,person,allRows,convSet,mo){
     sched:erpSchedFor(pos,rows,mo),
     avgV:visited/dw,avgP:productive/dw,avgC:conv/dw,avgS:sales/dw};
 }
-function erpSetPos(p){ERP.pos=p;ERP.person=null;ERP.fEmp='All';renderEmpReport();}
+function erpSetPos(p){ERP.pos=p;ERP.person=null;renderEmpReport();}
 function erpSetMonth(m){ERP.month=m;ERP.person=null;renderEmpReport();}
 function erpPick(name){ERP.person=name;renderEmpReport();}
 function erpBack(){ERP.person=null;renderEmpReport();}
@@ -2816,52 +2347,6 @@ function erpModeBtns(){
 }
 function erpSetMode(m){ERP.mode=m;ERP.person=null;renderEmpReport();}
 function erpSetRange(r){ERP.range=r;renderEmpReport();}
-function erpSetCMode(m){ERP.cMode=m;ERP.cExp.clear();renderEmpReport();}
-function erpCToggle(k){ERP.cExp.has(k)?ERP.cExp.delete(k):ERP.cExp.add(k);renderEmpReport();}
-function erpSetFilter(k,v){ERP['f'+k]=v;renderEmpReport();}
-function erpResetFilter(){ERP.fState='All';ERP.fFr='All';ERP.fEmp='All';renderEmpReport();}
-/* narrow YOLO rows by the Filter-mode selections (state / position / employee / franchise) */
-function erpApplyFilter(rows){
-  return rows.filter(o=>{
-    if(ERP.fState!=='All'&&p6State(o.r)!==ERP.fState)return false;
-    if(ERP.fFr!=='All'&&p6Fr(o.r)!==ERP.fFr)return false;
-    if(ERP.fEmp!=='All'){
-      // match the selected person against the CURRENT position's derived name
-      const who = ERP.pos==='BDE'?p6Employee(o.r) : ERP.pos==='BDM'?erpBdmOf(o) : erpStateHeadOf(o);
-      if(who!==ERP.fEmp)return false;
-    }
-    return true;
-  });
-}
-/* the Drill-down ⇄ Filter toggle (shared by Performance + Contribution) */
-function erpViewToggle(){
-  return `<span style="font-size:11px;color:var(--txt-mute);text-transform:uppercase;letter-spacing:.05em;margin-left:8px">View</span>
-    <div style="display:flex;gap:6px">
-      <button class="btn sm ${ERP.cMode==='drill'?'primary':''} keepenabled" onclick="erpSetCMode('drill')">🌳 Drill-down</button>
-      <button class="btn sm ${ERP.cMode==='filter'?'primary':''} keepenabled" onclick="erpSetCMode('filter')">🔍 Filter</button>
-    </div>`;
-}
-/* the Filter-mode dropdown bar: State · Position · Employee · Franchise */
-function erpFilterBar(rows){
-  const states=[...new Set(rows.map(o=>p6State(o.r)).filter(Boolean))].sort();
-  const frs=[...new Set(rows.filter(o=>ERP.fState==='All'||p6State(o.r)===ERP.fState).map(o=>p6Fr(o.r)).filter(Boolean))].sort();
-  // employees list respects the selected POSITION (BDE→BDEs, BDM→BDMs, State Head→State Heads),
-  // narrowed by the chosen state/franchise, using the clean role-derived names
-  const scopeRows=rows.filter(o=>(ERP.fState==='All'||p6State(o.r)===ERP.fState)&&(ERP.fFr==='All'||p6Fr(o.r)===ERP.fFr));
-  const emps=erpPersons(ERP.pos,scopeRows);
-  const positions=['BDE','BDM','State Head'];
-  const sel=(id,val,opts,ph)=>`<select class="fsel keepenabled ${val!=='All'?'on':''}" onchange="${id}" style="font-size:12px">
-    <option value="All">${ph}</option>${opts.map(o=>`<option value="${escAttr(o)}" ${o===val?'selected':''}>${o}</option>`).join('')}</select>`;
-  return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-    <span class="flabel">Filter</span>
-    ${sel("erpSetFilter('State',this.value)",ERP.fState,states,'All states')}
-    <select class="fsel keepenabled ${ERP.pos!=='BDE'?'on':''}" onchange="erpSetPos(this.value)" style="font-size:12px">
-      ${positions.map(p=>`<option value="${p}" ${p===ERP.pos?'selected':''}>${p}</option>`).join('')}</select>
-    ${sel("erpSetFilter('Emp',this.value)",ERP.fEmp,emps,'All '+ERP.pos+'s')}
-    ${sel("erpSetFilter('Fr',this.value)",ERP.fFr,frs,'All franchises')}
-    <button class="btn sm keepenabled" onclick="erpResetFilter()">Reset</button>
-  </div>`;
-}
 function erpSetUnit(u){ERP.unit=u;renderEmpReport();}
 function erpSetAnchor(v){ERP.anchor=v;renderEmpReport();}
 function erpAllKeys(){return Object.keys(DATASYNC).filter(dk=>p6ParseDate(dk));}
@@ -2923,18 +2408,15 @@ function renderEmpContribution(months){
     <div style="display:flex;gap:6px">${rangeBtns}</div>${anchorCtl}
     <span style="font-size:11px;color:var(--txt-mute);text-transform:uppercase;letter-spacing:.05em;margin-left:8px">Volume</span>
     <div style="display:flex;gap:6px">${unitBtns}</div>
-    ${erpViewToggle()}
     <span class="chip mute" style="font-size:11px">${erpRangeLabel([...keys])}</span>
-  </div>
-  ${ERP.cMode==='filter'?erpFilterBar(rangeRows):''}`;
+  </div>`;
 
-  // in Filter mode, narrow the source rows by the filter dropdowns
-  const viewRows = ERP.cMode==='filter' ? erpApplyFilter(rangeRows) : rangeRows;
-  const persons=erpPersons(ERP.pos,viewRows);
+  const persons=erpPersons(ERP.pos,rangeRows);
   let table;
   if(!persons.length){
     table=`<div style="padding:34px;text-align:center;color:var(--txt-mute)">No ${ERP.pos} activity in this range.${ERP.pos==='BDM'?' (BDM mapping comes from the franchise master.)':''}</div>`;
   } else {
+    const rows=persons.map(p=>({p,m:erpContribFor(ERP.pos,p,rangeRows,conv)})).sort((a,b)=>b.m.sales-a.m.sales);
     const num=(t,dec=0)=>fmtN(dec?(+t).toFixed(dec):Math.round(t));
     const cell=(tot,dw,dec=0)=>`<td style="padding:10px 10px;text-align:right"><div style="color:var(--txt);font-weight:700">${num(tot,dec)}</div><div style="font-size:9.5px;color:var(--txt-mute)">${num(tot/dw,dec===0?1:dec)}/day</div></td>`;
     const cellRs=(tot,dw)=>`<td style="padding:10px 10px;text-align:right"><div style="color:var(--txt);font-weight:700">${pjpInr(Math.round(tot))}</div><div style="font-size:9.5px;color:var(--txt-mute)">${pjpInr(Math.round(tot/dw))}/day</div></td>`;
@@ -2942,52 +2424,19 @@ function renderEmpContribution(months){
     const head2=`<tr>
       <th style="text-align:left;padding:9px 12px;font-size:11px;color:var(--txt-mute);text-transform:uppercase;letter-spacing:.03em">${ERP.pos}</th>
       ${th('Days')}${th('Calls<br>tot · /day')}${th('Productive<br>tot · /day')}${th('New outlets<br>tot · /day')}${th((ERP.unit==='cases'?'Cases':'Bottles')+'<br>tot · /day')}${th('Sales ₹<br>tot · /day')}${th('Collection ₹<br>tot · /day')}</tr>`;
-    // one data row for a given (pos, person), at a given indent depth, optionally expandable
-    const dataRow=(pos,p,m,depth,expandKey,hasKids)=>{
-      const pad=12+depth*22;
-      const open=expandKey&&ERP.cExp.has(expandKey);
-      const caret=hasKids?`<span style="display:inline-block;width:14px;color:var(--aqua)">${open?'▾':'▸'}</span>`:'<span style="display:inline-block;width:14px"></span>';
-      const click=hasKids?`class="clickable" onclick="erpCToggle('${jsq(expandKey)}')" style="cursor:pointer"`:'';
-      return `<tr ${click} style="border-top:1px solid var(--line)">
-        <td style="padding:10px 12px 10px ${pad}px;font-weight:${depth===0?700:600};color:var(--txt);white-space:nowrap">${caret}${p}</td>
-        <td style="padding:10px 10px;text-align:right;color:var(--txt-dim)">${m.dw}</td>
-        ${cell(m.visited,m.dw)}
-        ${cell(m.productive,m.dw)}
-        <td style="padding:10px 10px;text-align:right"><div style="color:var(--violet);font-weight:700">${num(m.newc)}</div><div style="font-size:9.5px;color:var(--txt-mute)">${num(m.newc/m.dw,1)}/day</div></td>
-        ${ERP.unit==='cases'?cell(m.cases,m.dw,1):cell(m.btl,m.dw)}
-        ${cellRs(m.sales,m.dw)}
-        ${cellRs(m.coll,m.dw)}</tr>`;
-    };
-    let body='';
-    if(ERP.cMode==='filter' || ERP.pos==='BDE'){
-      // Filter mode (or BDE which has no children): flat list of the current pos, narrowed by filters
-      const rows=persons.map(p=>({p,m:erpContribFor(ERP.pos,p,viewRows,conv)})).sort((a,b)=>b.m.sales-a.m.sales);
-      body=rows.map(({p,m})=>dataRow(ERP.pos,p,m,0,null,false)).join('');
-    } else {
-      // drill-down: State Head → BDMs → BDEs (or BDM → BDEs)
-      const tops=persons.map(p=>({p,m:erpContribFor(ERP.pos,p,viewRows,conv)})).sort((a,b)=>b.m.sales-a.m.sales);
-      tops.forEach(({p,m})=>{
-        const kids=erpChildrenOf(ERP.pos,p,rangeRows);
-        const topKey=ERP.pos+':'+p;
-        body+=dataRow(ERP.pos,p,m,0,topKey,kids.names.length>0);
-        if(ERP.cExp.has(topKey)){
-          const childRows=kids.names.map(cp=>({cp,cm:erpContribFor(kids.childPos,cp,rangeRows,conv)})).sort((a,b)=>b.cm.sales-a.cm.sales);
-          childRows.forEach(({cp,cm})=>{
-            const gk=erpChildrenOf(kids.childPos,cp,rangeRows);
-            const childKey=kids.childPos+':'+p+':'+cp;
-            body+=dataRow(kids.childPos,cp,cm,1,gk.names.length?childKey:null,gk.names.length>0);
-            if(gk.names.length&&ERP.cExp.has(childKey)){
-              const gRows=gk.names.map(gp=>({gp,gm:erpContribFor(gk.childPos,gp,rangeRows,conv)})).sort((a,b)=>b.gm.sales-a.gm.sales);
-              gRows.forEach(({gp,gm})=>{body+=dataRow(gk.childPos,gp,gm,2,null,false);});
-            }
-          });
-        }
-      });
-    }
+    const body=rows.map(({p,m})=>`<tr style="border-top:1px solid var(--line)">
+      <td style="padding:10px 12px;font-weight:700;color:var(--txt);white-space:nowrap">${p}</td>
+      <td style="padding:10px 10px;text-align:right;color:var(--txt-dim)">${m.dw}</td>
+      ${cell(m.visited,m.dw)}
+      ${cell(m.productive,m.dw)}
+      <td style="padding:10px 10px;text-align:right"><div style="color:var(--violet);font-weight:700">${num(m.newc)}</div><div style="font-size:9.5px;color:var(--txt-mute)">${num(m.newc/m.dw,1)}/day</div></td>
+      ${ERP.unit==='cases'?cell(m.cases,m.dw,1):cell(m.btl,m.dw)}
+      ${cellRs(m.sales,m.dw)}
+      ${cellRs(m.coll,m.dw)}</tr>`).join('');
     table=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:760px">${head2}${body}</table></div>`;
   }
   $('#mod-empreport').innerHTML=head+`<div class="panel">
-    <div class="panel-h"><h3>${ERP.pos} contribution · ${erpRangeLabel([...keys])}</h3><span class="hint">${ERP.cMode==='drill'&&ERP.pos!=='BDE'?'Click a row to drill into the people under them':'Each metric shows total and average per day worked'}</span></div>
+    <div class="panel-h"><h3>${ERP.pos} contribution · ${erpRangeLabel([...keys])}</h3><span class="hint">Each metric shows total and average per day worked</span></div>
     ${table}
     <div class="note">📌 Every column shows <b>total</b> (top) and <b>average per working day</b> (below). <b>New outlets</b> = first order from a previously non-buying outlet · <b>Cases</b> = glass ÷ 24 + PET ÷ 30 · averages use days actually worked in the range.</div>
   </div>`;
@@ -3012,16 +2461,13 @@ function renderEmpReport(){
     <span style="font-family:'Archivo';font-weight:800;font-size:16px;color:var(--txt)">📋 Employee Reports</span>
     ${erpModeBtns()}
     <div style="display:flex;gap:6px;margin-left:6px">${posTabs}</div>
-    ${erpViewToggle()}
     <select class="keepenabled" onchange="erpSetMonth(this.value)" style="margin-left:auto;background:var(--ink);border:1px solid var(--line2);color:var(--txt);padding:8px 12px;border-radius:9px;font-size:13px">${moOpts}</select>
     ${demoOn?`<button class="btn sm keepenabled" style="border-color:var(--amber);color:var(--amber)" onclick="clearDemoPjp()">🧹 Clear demo plans</button>`:''}
-  </div>
-  ${(!ERP.person&&ERP.cMode==='filter')?erpFilterBar(allRows):''}`;
+  </div>`;
 
   if(!ERP.person){
-    /* person list — narrowed by filter dropdowns in Filter mode */
-    const listRows = ERP.cMode==='filter' ? erpApplyFilter(allRows) : allRows;
-    const persons=erpPersons(ERP.pos,listRows);
+    /* person list */
+    const persons=erpPersons(ERP.pos,allRows);
     let rowsHtml='';
     if(!persons.length){
       rowsHtml=`<div style="padding:34px;text-align:center;color:var(--txt-mute)">No ${ERP.pos} data for ${erpMoLabel(mo)}.${ERP.pos==='BDM'?' (BDM mapping comes from the franchise master — load it via Bulk Update.)':''}</div>`;
@@ -3035,7 +2481,7 @@ function renderEmpReport(){
         <th style="text-align:right;padding:9px 12px">Sales/day</th>
         <th style="width:24px"></th></tr>`;
       const body=persons.map(p=>{
-        const m=erpMetrics(ERP.pos,p,listRows,convSet,mo);
+        const m=erpMetrics(ERP.pos,p,allRows,convSet,mo);
         const cCol=m.avgC>=5?'var(--green)':m.avgC>=3?'var(--amber)':'var(--red)';
         return `<tr class="erp-row" onclick="erpPick('${p.replace(/'/g,"\\'")}')" style="cursor:pointer;border-top:1px solid var(--line)">
           <td style="padding:11px 12px;font-weight:700;color:var(--txt)">${p}</td>
@@ -3144,15 +2590,8 @@ function seedDemoBdmPjp(){
 
 /* ════════════════ PJP EMPLOYEE VIEW (one person → their month across franchises) ════════════════ */
 function pjpEmpList(role){
-  if(role==='BDE')return FRS.filter(f=>f.bde&&f.bde!=='-'&&(!SESSION||inScopeFr(f.name))).map(f=>({name:f.bde,fr:f.name})).sort((a,b)=>a.name.localeCompare(b.name));
-  if(role==='BDM'){
-    // only BDMs within this session's scope (a BDM sees only himself; State Head sees his state's BDMs; NSM/admin see all)
-    const allowedFrs=new Set((SESSION?scopeBURNFR():BURNFR).map(f=>f.name));
-    const allowedBdms=new Set((SESSION?scopeBURNFR():BURNFR).map(f=>f.bdm).filter(b=>b&&b!=='-'));
-    const s=new Set();
-    Object.keys(PJP_EXTRA).forEach(fr=>{if(!allowedFrs.has(fr))return;(PJP_EXTRA[fr][pjpMonth]||[]).forEach(p=>{if(p.role==='BDM'&&allowedBdms.has(p.owner))s.add(p.owner);});});
-    return [...s].sort().map(n=>({name:n}));
-  }
+  if(role==='BDE')return FRS.filter(f=>f.bde&&f.bde!=='-').map(f=>({name:f.bde,fr:f.name})).sort((a,b)=>a.name.localeCompare(b.name));
+  if(role==='BDM'){const s=new Set();Object.keys(PJP_EXTRA).forEach(fr=>{(PJP_EXTRA[fr][pjpMonth]||[]).forEach(p=>{if(p.role==='BDM')s.add(p.owner);});});return [...s].sort().map(n=>({name:n}));}
   return [];
 }
 function pjpEmpDays(role,person){
@@ -3160,11 +2599,10 @@ function pjpEmpDays(role,person){
   const out=Array.from({length:dim},(_,i)=>({day:i+1,items:[]}));
   if(role==='BDE'){
     const f=FRS.find(x=>x.bde===person);if(!f)return out;
-    if(SESSION&&!inScopeFr(f.name))return out;   // out of scope — show nothing
     const plan=(PJP_STORE[f.name]||{})[mo];if(!plan)return out;
     plan.days.forEach((d,i)=>{if(d.route)out[i].items.push({fr:f.name,route:d.route,tgt:(Number(d.buyTarget)||0)+(Number(d.nbPot)||0),nb:d.nbOutlets||0});});
   } else if(role==='BDM'){
-    Object.keys(PJP_EXTRA).forEach(fr=>{if(SESSION&&!inScopeFr(fr))return;(PJP_EXTRA[fr][mo]||[]).filter(p=>p.owner===person).forEach(p=>{p.days.forEach((d,i)=>{if(d.route)out[i].items.push({fr,route:d.route,tgt:Number(d.nbPot)||0,nb:d.nbOutlets||0});});});});
+    Object.keys(PJP_EXTRA).forEach(fr=>{(PJP_EXTRA[fr][mo]||[]).filter(p=>p.owner===person).forEach(p=>{p.days.forEach((d,i)=>{if(d.route)out[i].items.push({fr,route:d.route,tgt:Number(d.nbPot)||0,nb:d.nbOutlets||0});});});});
   }
   return out;
 }
@@ -3528,6 +2966,7 @@ function renderPjpBde(){
   const data=getPjp(fr,pjpMonth);
   const routes=pjpRoutes(fr);
   const tgtBtl=pjpTgtBtl(fr);
+  const bpc=pjpBpcFn(fr);
   const bfr=BURNFR.find(f=>f.name===fr);
   const isEditable=data.status==='DRAFT';
   const _ignore_=0;// can THIS session edit this franchise's PJP? admin always; BDE/BDM/SH if in scope; NSM/Finance/Franchisee no edit
@@ -3685,7 +3124,7 @@ function renderPjpBde(){
 function pjpPickDay(day){pjpSelDay=(pjpSelDay===day)?null:day;renderPjpBde();}
 function pjpDayRoute(i,rv){
   const data=getPjp(pjpBdeView,pjpMonth);data.days[i].route=rv;
-  if(rv){const r=pjpRoutes(pjpBdeView).find(x=>x.route===rv);const pot=r?Math.round(r.buyPot||0):0;data.days[i].buyPot=pot;if(!data.days[i].buyTarget)data.days[i].buyTarget=pot;}
+  if(rv){const r=pjpRoutes(pjpBdeView).find(x=>x.route===rv);const pot=r?Math.round(r.buyPot*pjpBpcFn(pjpBdeView)):0;data.days[i].buyPot=pot;if(!data.days[i].buyTarget)data.days[i].buyTarget=pot;}
   else {data.days[i].buyPot=0;data.days[i].buyTarget=0;}
   renderPjpBde();
 }
@@ -3702,472 +3141,16 @@ function pjpSubmit(){
   if(plan<tgt*0.5&&!confirm(`Covers only ${Math.round(plan/Math.max(1,tgt)*100)}% of target. Submit anyway?`))return;
   if(!frHasBde(pjpBdeView)&&!frHasBdm(pjpBdeView)){
     data.status='SH_APPROVED';data.approvals={};
-    pjpSelDay=null;renderPjp();sbSaveDebounced();toast('State Head plan — submitted to NSM ✓','ok');
+    pjpSelDay=null;renderPjp();toast('State Head plan — submitted to NSM ✓','ok');
     return;
   }
   if(!frHasBdm(pjpBdeView)){
     data.status='BDM_APPROVED';data.approvals={};
-    pjpSelDay=null;renderPjp();sbSaveDebounced();toast('No BDM — PJP submitted to State Head ✓','ok');
+    pjpSelDay=null;renderPjp();toast('No BDM — PJP submitted to State Head ✓','ok');
     return;
   }
   data.status='SUBMITTED';data.approvals={};
-  pjpSelDay=null;renderPjp();sbSaveDebounced();toast('PJP submitted to BDM ✓','ok');
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   MANAGER PLANNER (BDM / State Head / NSM)
-   One scrolling screen: Gap Cockpit → Approvals(+join) → My own plan.
-   ────────────────────────────────────────────────────────────────────── */
-let MGR_REVIEW_FR=null;
-let MGR_OWN_SELDAY=null;
-let MGR_APPR_MODE='drill';   // 'drill' | 'filter'
-let MGR_APPR_GROUP='fr';     // 'fr' (franchise-wise) | 'emp' (employee-wise)
-const MGR_APPR_EXP=new Set();
-let MGR_COCK_MODE='drill';   // cockpit: 'drill' | 'filter'
-let MGR_COCK_BDM='All';      // cockpit filter: which BDM
-const MGR_COCK_EXP=new Set();
-
-function mgrIdentity(){
-  if(!SESSION)return null;
-  const role=SESSION.role;
-  if(role==='bdm')      return {level:'bdm', name:SESSION.scopeVal, label:'BDM'};
-  if(role==='statehead')return {level:'sh',  name:SESSION.scopeVal, label:'State Head'};
-  if(role==='nsm')      return {level:'nsm', name:SESSION.name||'NSM', label:'NSM'};
-  if(role==='admin')    return {level:'admin',name:'Admin', label:'Admin'};
-  return null;
-}
-function mgrSubordinateFrs(m){
-  if(!m)return [];
-  if(m.level==='bdm')  return BURNFR.filter(f=>f.bdm===m.name).map(f=>f.name);
-  if(m.level==='sh')   return BURNFR.filter(f=>f.state===m.name).map(f=>f.name);
-  if(m.level==='nsm'||m.level==='admin') return BURNFR.map(f=>f.name);
-  return [];
-}
-function mgrOwnKey(m){return '__MGR__'+m.level+'__'+(m.name||'');}
-function getMgrOwn(m,mo){
-  const key=mgrOwnKey(m);
-  if(!PJP_STORE[key])PJP_STORE[key]={};
-  if(!PJP_STORE[key][mo]){
-    const dim=getDim(mo);
-    PJP_STORE[key][mo]={status:'DRAFT',owner:m.name,level:m.level,isOwn:true,
-      days:Array.from({length:dim},(_,i)=>({dayNum:i+1,fr:'',route:'',buyTarget:0,nbOutlets:0,nbPot:0,remark:'',joinFrom:''})),
-      approvals:{}};
-  }
-  return PJP_STORE[key][mo];
-}
-function mgrIncomingStatus(m){
-  if(m.level==='bdm') return 'SUBMITTED';
-  if(m.level==='sh')  return 'BDM_PUSHED';
-  return 'SH_PUSHED';
-}
-function mgrApprovedStatus(m){
-  if(m.level==='bdm') return 'BDM_APPROVED';
-  if(m.level==='sh')  return 'SH_APPROVED';
-  return 'NSM_APPROVED';
-}
-function mgrPushedStatus(m){
-  if(m.level==='bdm') return 'BDM_PUSHED';
-  if(m.level==='sh')  return 'SH_PUSHED';
-  return 'NSM_APPROVED';
-}
-const MGR_ST_LABEL={
-  DRAFT:'Not submitted', SUBMITTED:'Submitted — review',
-  BDM_APPROVED:'Approved by BDM', BDM_PUSHED:'Pushed to State Head',
-  SH_APPROVED:'Approved by State Head', SH_PUSHED:'Pushed to NSM',
-  NSM_APPROVED:'Approved by NSM ✓', LOCKED:'Locked ✓', CORRECTION:'Correction requested'
-};
-const MGR_ST_CLS={
-  DRAFT:'mute', SUBMITTED:'amber', BDM_APPROVED:'aqua', BDM_PUSHED:'violet',
-  SH_APPROVED:'aqua', SH_PUSHED:'violet', NSM_APPROVED:'green', LOCKED:'green', CORRECTION:'red'
-};
-
-function renderMgrPlanner(){
-  const m=mgrIdentity();
-  if(!m){$('#mod-pjp').innerHTML='<div class="note">No manager identity.</div>';return;}
-  const mo=pjpMonth;
-  let frs=mgrSubordinateFrs(m).filter(fr=> !SESSION || inScopeFr(fr));
-  // honour the top filter bar (state / BDM / franchise)
-  frs=frs.filter(fr=>{
-    const bfr=BURNFR.find(f=>f.name===fr)||{};
-    if(PJP_F.state!=='All'&&bfr.state!==PJP_F.state)return false;
-    if(PJP_F.bdm!=='All'&&bfr.bdm!==PJP_F.bdm)return false;
-    if(PJP_F.fr!=='All'&&fr!==PJP_F.fr)return false;
-    return true;
-  });
-  const cockpit=frs.map(fr=>{
-    const tgt=pjpTgtBtl(fr);
-    const rs=pjpRoutes(fr);
-    let buyPot=0,nbPot=0; rs.forEach(r=>{buyPot+=Math.round(r.buyPot||0);nbPot+=Math.round(r.nonbuyPot||0);});
-    const gap=Math.max(0,tgt-buyPot);
-    const gapPct=tgt?Math.round(gap/tgt*100):0;
-    const bfr=BURNFR.find(f=>f.name===fr)||{};
-    const st=getPjp(fr,mo).status;
-    return {fr, bde:bfr.bde||'—', bdm:bfr.bdm||'-', tgt, buyPot, nbPot, gap, gapPct, st};
-  }).sort((a,b)=>a.fr.localeCompare(b.fr));
-
-  const own=getMgrOwn(m,mo);
-
-  let html=pjpTabsBar();
-  html+=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
-    <span class="chip aqua">🧭 ${m.label} Planner · ${m.name}</span>
-    <span class="chip mute">${monthLbl(mo)}</span>
-    <span style="color:var(--txt-mute);font-size:12px">${frs.length} franchise${frs.length!==1?'s':''} under you</span>
-  </div>`;
-
-  html+=`<div class="panel"><div class="panel-h"><h3>📊 Gap cockpit — where to spend your field days</h3>
-    ${m.level!=='bdm'?`<div style="display:flex;gap:10px;align-items:center">
-      <div class="modswitch" style="padding:3px">
-        <button class="modbtn ${MGR_COCK_MODE==='drill'?'active':''}" style="padding:5px 12px;font-size:12px" onclick="MGR_COCK_MODE='drill';renderMgrPlanner()">🌳 Drill-down</button>
-        <button class="modbtn ${MGR_COCK_MODE==='filter'?'active':''}" style="padding:5px 12px;font-size:12px" onclick="MGR_COCK_MODE='filter';renderMgrPlanner()">🔍 Filter</button>
-      </div>
-      ${MGR_COCK_MODE==='filter'?`<select class="fsel" onchange="MGR_COCK_BDM=this.value;renderMgrPlanner()">
-        <option value="All" ${MGR_COCK_BDM==='All'?'selected':''}>All BDMs</option>
-        ${[...new Set(cockpit.map(r=>r.bdm))].filter(b=>b&&b!=='-').sort().map(b=>`<option value="${escAttr(b)}" ${MGR_COCK_BDM===b?'selected':''}>${b}</option>`).join('')}
-      </select>`:''}
-    </div>`:''}</div>
-    ${mgrCockpitBody(m,cockpit)}
-    <div class="note">📌 Gap = Target − Buying potential. 🔴 big gap → plan your own visits there. 🟢 small gap → the BDE can close it alone.${m.level!=='bdm'?' Drill a BDM to see his BDEs.':''}</div>
-  </div>`;
-
-  const incoming=mgrIncomingStatus(m), approved=mgrApprovedStatus(m);
-  html+=`<div class="panel" style="margin-top:18px"><div class="panel-h"><h3>✓ Approvals — your team's plans</h3>
-    <div style="display:flex;gap:10px;align-items:center">
-      <div class="modswitch" style="padding:3px">
-        <button class="modbtn ${MGR_APPR_MODE==='drill'?'active':''}" style="padding:5px 12px;font-size:12px" onclick="MGR_APPR_MODE='drill';renderMgrPlanner()">🌳 Drill-down</button>
-        <button class="modbtn ${MGR_APPR_MODE==='filter'?'active':''}" style="padding:5px 12px;font-size:12px" onclick="MGR_APPR_MODE='filter';renderMgrPlanner()">🔍 Filter</button>
-      </div>
-      <div class="modswitch" style="padding:3px">
-        <button class="modbtn ${MGR_APPR_GROUP==='fr'?'active':''}" style="padding:5px 12px;font-size:12px" onclick="MGR_APPR_GROUP='fr';renderMgrPlanner()">🏪 Franchise-wise</button>
-        <button class="modbtn ${MGR_APPR_GROUP==='emp'?'active':''}" style="padding:5px 12px;font-size:12px" onclick="MGR_APPR_GROUP='emp';renderMgrPlanner()">👤 Employee-wise</button>
-      </div>
-    </div></div>
-    ${mgrApprovalsBody(m,mo,cockpit)}`;
-  if(MGR_REVIEW_FR&&frs.includes(MGR_REVIEW_FR)){
-    html+=mgrReviewEditor(m,MGR_REVIEW_FR,mo);
-  }
-  html+=`</div>`;
-
-  html+=`<div class="panel" style="margin-top:18px"><div class="panel-h"><h3>📅 My own plan — ${m.name}</h3>
-    <span class="chip ${MGR_ST_CLS[own.status]||'mute'}">${MGR_ST_LABEL[own.status]||own.status}</span></div>
-    ${mgrOwnCalendar(m,mo)}</div>`;
-
-  $('#mod-pjp').innerHTML=html;
-}
-
-function mgrReviewEditor(m,fr,mo){
-  const data=getPjp(fr,mo);
-  const routes=pjpRoutes(fr);
-  const dim=getDim(mo);
-  const canEdit=[mgrIncomingStatus(m),'CORRECTION',mgrApprovedStatus(m)].includes(data.status);
-  const own=getMgrOwn(m,mo);
-  let rows='';
-  for(let day=1;day<=dim;day++){
-    const d=data.days[day-1];
-    if(!d.route) continue;
-    const joined=own.days[day-1]&&own.days[day-1].joinFrom===fr&&own.days[day-1].route===d.route&&d.route;
-    const rOpts=`<option value="">— rest —</option>`+routes.map(r=>`<option value="${escAttr(r.route)}" ${r.route===d.route?'selected':''}>${prettyRoute(r.route)}</option>`).join('');
-    rows+=`<tr>
-      <td style="color:var(--txt-mute)">${day}</td>
-      <td><select ${canEdit?'':'disabled'} onchange="mgrEditDay('${jsq(fr)}',${day-1},'route',this.value)" style="min-width:200px;background:var(--ink);border:1px solid var(--line2);color:var(--txt);padding:6px 8px;border-radius:7px;font-size:12px">${rOpts}</select></td>
-      <td><input type="number" ${canEdit?'':'disabled'} class="cellinp" style="width:90px" value="${d.buyTarget||0}" onchange="mgrEditDay('${jsq(fr)}',${day-1},'buyTarget',this.value)"></td>
-      <td><input type="number" ${canEdit?'':'disabled'} class="cellinp aq" style="width:70px" value="${d.nbOutlets||0}" onchange="mgrEditDay('${jsq(fr)}',${day-1},'nbOutlets',this.value)"></td>
-      <td><input type="number" ${canEdit?'':'disabled'} class="cellinp aq" style="width:90px" value="${d.nbPot||0}" onchange="mgrEditDay('${jsq(fr)}',${day-1},'nbPot',this.value)"></td>
-      <td><label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" ${joined?'checked':''} onchange="mgrToggleJoin('${jsq(fr)}',${day-1},this.checked)"> 🤝 Join</label></td></tr>`;
-  }
-  const bfr=BURNFR.find(f=>f.name===fr)||{};
-  return `<div style="border-top:1px solid var(--line);margin-top:8px;padding:16px 18px">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
-      <b>Reviewing: ${bfr.bde||fr}</b>
-      <span class="chip ${MGR_ST_CLS[data.status]||'mute'}">${MGR_ST_LABEL[data.status]||data.status}</span>
-      <button class="btn sm" style="margin-left:auto" onclick="MGR_REVIEW_FR=null;renderMgrPlanner()">✕ Close</button>
-    </div>
-    <div class="tbl-scroll"><table>
-      <thead><tr><th>Day</th><th>Route</th><th>Buying btl</th><th>NB outlets</th><th>NB pot</th><th>Joint</th></tr></thead>
-      <tbody>${rows||`<tr><td colspan="6" style="text-align:center;color:var(--txt-mute);padding:16px">No planned days.</td></tr>`}</tbody>
-    </table></div>
-    <div style="display:flex;gap:8px;margin-top:12px">
-      ${(data.status===mgrIncomingStatus(m)||data.status===mgrApprovedStatus(m))?`<button class="btn primary" onclick="mgrApproveSend('${jsq(fr)}')">✓ Approve &amp; send to ${mgrNextLabel(m)} →</button>
-        <button class="btn danger" onclick="mgrRequestCorrection('${jsq(fr)}')">✎ Request correction</button>`:''}
-    </div>
-    <div class="note">🤝 Tick <b>Join</b> on any day to add that route to your own plan below (your own separate target). Un-tick to remove it. You can also edit the BDE's day values directly here. Each plan moves on its own — one not-submitted BDE never holds up the others.</div>
-  </div>`;
-}
-
-function mgrOwnCalendar(m,mo){
-  const own=getMgrOwn(m,mo);
-  const dim=getDim(mo);
-  const canEdit=own.status==='DRAFT'||own.status==='CORRECTION';
-  const allFrs=mgrSubordinateFrs(m);
-  const [yr,mn]=mo.split('-').map(Number);
-  const firstDow=new Date(yr,mn-1,1).getDay();
-  const DOW_S=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const DOW_F=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-
-  let planBuy=0,planNb=0;own.days.forEach(d=>{planBuy+=Number(d.buyTarget)||0;planNb+=Number(d.nbPot)||0;});
-  const planTotal=planBuy+planNb;
-
-  /* calendar grid */
-  let cal=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px">`;
-  DOW_S.forEach(d=>{cal+=`<div style="text-align:center;font-size:10px;font-weight:700;color:var(--txt-mute);letter-spacing:.05em;text-transform:uppercase;padding:5px 0">${d}</div>`;});
-  for(let bl=0;bl<firstDow;bl++)cal+=`<div></div>`;
-  for(let day=1;day<=dim;day++){
-    const d=own.days[day-1];
-    const dow=new Date(yr,mn-1,day).getDay();
-    const isSun=dow===0,isSel=MGR_OWN_SELDAY===day,hasR=!!d.route;
-    const bg=isSel?'rgba(155,140,255,.18)':hasR?'rgba(155,140,255,.08)':isSun?'rgba(255,84,104,.06)':'var(--panel)';
-    const bc=isSel?'var(--violet)':hasR?'rgba(155,140,255,.4)':isSun?'rgba(255,84,104,.25)':'var(--line)';
-    const lbl=hasR?prettyRoute(d.route).replace(/^[\w]+_/,'').slice(0,14):isSun?'rest':'—';
-    cal+=`<div onclick="mgrOwnPickDay(${day})" style="background:${bg};border:1.5px solid ${bc};border-radius:9px;padding:7px 5px;cursor:pointer;min-height:66px;transition:.1s">
-      <div style="font-size:11px;font-weight:700;color:${isSun&&!hasR?'var(--red)':'var(--txt)'}">${day}</div>
-      <div style="font-size:9.5px;color:${hasR?'var(--violet)':'var(--txt-mute)'};margin-top:3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${lbl}</div>
-      ${hasR?`<div style="font-size:9.5px;color:var(--green);margin-top:2px">${fmtN(Math.round(d.buyTarget||0))}<span style="font-size:8px;opacity:.6">btl</span></div>`:''}
-      ${hasR&&d.fr?`<div style="font-size:8px;color:var(--txt-mute);overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${d.fr.slice(0,16)}</div>`:''}
-      ${d.joinFrom?`<div style="font-size:8px;font-weight:700;color:var(--violet)">🤝 joint</div>`:''}
-    </div>`;
-  }
-  cal+=`</div>`;
-
-  /* day detail panel */
-  let dayPanel='';
-  if(MGR_OWN_SELDAY&&MGR_OWN_SELDAY>=1&&MGR_OWN_SELDAY<=dim){
-    const i=MGR_OWN_SELDAY-1;const d=own.days[i];
-    const dow=new Date(yr,mn-1,MGR_OWN_SELDAY).getDay();
-    const frRoutes=d.fr?pjpRoutes(d.fr):[];
-    const frOpts=`<option value="">— pick franchise —</option>`+allFrs.map(f=>`<option value="${escAttr(f)}" ${f===d.fr?'selected':''}>${f}</option>`).join('');
-    const rOpts=`<option value="">— rest / no visit —</option>`+frRoutes.map(r=>`<option value="${escAttr(r.route)}" ${r.route===d.route?'selected':''}>${prettyRoute(r.route)}</option>`).join('');
-    const ref=(d.fr&&d.route)?pjpRouteRef(d.fr,d.route):{buyPot:0,nbPot:0};
-    dayPanel=`<div style="background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:18px;margin-top:16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <b style="font-size:15px">📍 ${DOW_F[dow]} · ${monthLbl(mo).split(' ')[0]} ${MGR_OWN_SELDAY}</b>
-        <button class="btn sm" onclick="MGR_OWN_SELDAY=null;renderMgrPlanner()">✕</button>
-      </div>
-      ${d.joinFrom?`<div class="chip violet" style="margin-bottom:12px;font-size:11px">🤝 Joint work with ${d.joinFrom} — un-tick Join in Approvals to remove</div>`:''}
-      <div style="margin-bottom:12px"><div style="font-size:11px;color:var(--txt-mute);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Franchise</div>
-        <select ${canEdit&&!d.joinFrom?'':'disabled'} onchange="mgrOwnEdit(${i},'fr',this.value)" style="width:100%;background:var(--ink);border:1px solid var(--line2);color:var(--txt);padding:10px 12px;border-radius:9px;font-size:13px">${frOpts}</select></div>
-      <div style="margin-bottom:12px"><div style="font-size:11px;color:var(--txt-mute);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Route <span style="text-transform:none;color:var(--txt-mute)">(one per day)</span></div>
-        <select ${canEdit&&!d.joinFrom?'':'disabled'} onchange="mgrOwnEdit(${i},'route',this.value)" style="width:100%;background:var(--ink);border:1px solid var(--line2);color:var(--txt);padding:10px 12px;border-radius:9px;font-size:13px">${rOpts}</select></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div><div style="font-size:11px;color:var(--green);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Buying — bottles to sell</div>
-          <input type="number" min="0" ${canEdit?'':'disabled'} class="cellinp" style="width:100%;padding:10px 12px;font-size:14px;color:var(--green);border-color:var(--green)" value="${d.buyTarget||0}" onchange="mgrOwnEdit(${i},'buyTarget',this.value)" placeholder="${ref.buyPot||0}"></div>
-        <div><div style="font-size:11px;color:var(--violet);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">NB potential — bottles</div>
-          <input type="number" min="0" ${canEdit?'':'disabled'} class="cellinp aq" style="width:100%;padding:10px 12px;font-size:13px" value="${d.nbPot||0}" onchange="mgrOwnEdit(${i},'nbPot',this.value)" placeholder="${ref.nbPot||0}"></div>
-      </div>
-      <div style="margin-top:12px"><div style="font-size:11px;color:var(--txt-mute);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Remarks / focus area</div>
-        <input ${canEdit?'':'disabled'} class="cellinp" style="width:100%;padding:10px 12px;font-size:13px" value="${(d.remark||'').replace(/"/g,'&quot;')}" onchange="mgrOwnEdit(${i},'remark',this.value)" placeholder="Focus area, joint call, key accounts…"></div>
-      ${canEdit&&d.route&&!d.joinFrom?`<div style="margin-top:14px"><button class="btn sm danger" onclick="mgrOwnClear(${i})">✕ Clear this day</button></div>`:''}
-    </div>`;
-  }
-
-  return `<div style="padding:0 4px 4px">
-    <div class="kpis" style="padding:0 14px 14px">
-      <div class="kpi" style="--accent:var(--violet)"><div class="kl">Days planned</div><div class="kv">${own.days.filter(d=>d.route).length}</div></div>
-      <div class="kpi" style="--accent:var(--green)"><div class="kl">Buying (btl)</div><div class="kv">${fmtN(planBuy)}</div></div>
-      <div class="kpi" style="--accent:var(--aqua)"><div class="kl">Total planned (btl)</div><div class="kv">${fmtN(planTotal)}</div></div>
-    </div>
-    <div style="color:var(--txt-mute);font-size:12px;margin:0 4px 12px">Click a day → pick franchise + route (one per day) · joined days come from Approvals above</div>
-    ${cal}
-    ${dayPanel}
-    ${own.status==='DRAFT'||own.status==='CORRECTION'?`<div style="margin-top:16px"><button class="btn primary" onclick="mgrOwnSubmit()">Submit my plan ${m.level==='bdm'?'to State Head':m.level==='sh'?'to NSM':''} →</button></div>`:''}
-  </div>`;
-}
-function mgrOwnPickDay(day){MGR_OWN_SELDAY=(MGR_OWN_SELDAY===day)?null:day;renderMgrPlanner();}
-
-/* action cell for one franchise plan */
-function mgrNextLabel(m){
-  if(m.level==='bdm') return 'State Head';
-  if(m.level==='sh')  return 'NSM';
-  if(m.level==='nsm') return 'Admin';
-  return 'next';
-}
-function mgrPlanAction(m,fr){
-  const data=getPjp(fr,pjpMonth);const fq=jsq(fr);
-  const incoming=mgrIncomingStatus(m), approved=mgrApprovedStatus(m);
-  const next=mgrNextLabel(m);
-  // plan sitting with this manager to action → Review to open, or send straight up
-  if(data.status===incoming||data.status===approved){
-    return `<button class="btn sm" onclick="mgrOpenReview('${fq}')">Review</button> `+
-           `<button class="btn sm primary" onclick="mgrApproveSend('${fq}')">Send to ${next} →</button>`;
-  }
-  if(data.status===mgrPushedStatus(m))return `<span class="chip violet" style="font-size:11px">Sent to ${next} ✓</span>`;
-  if(data.status==='CORRECTION')return `<span class="chip red" style="font-size:11px">Sent back for correction</span>`;
-  if(data.status==='DRAFT')return `<span style="color:var(--txt-mute);font-size:12px">⏳ not submitted yet</span>`;
-  return `<button class="btn sm" onclick="mgrOpenReview('${fq}')">View</button>`;
-}
-/* approve + forward one plan to the next level in a single click */
-function mgrApproveSend(fr){
-  const m=mgrIdentity();const data=getPjp(fr,pjpMonth);
-  data.status=mgrPushedStatus(m);
-  toast(`Sent to ${mgrNextLabel(m)} ✓`,'ok');
-  MGR_REVIEW_FR=null;renderMgrPlanner();sbSaveDebounced();
-}
-function mgrPlannedBtl(fr){const data=getPjp(fr,pjpMonth);let p=0;data.days.forEach(d=>{p+=Number(d.buyTarget)||0;p+=Number(d.nbPot)||0;});return p;}
-
-/* one franchise/BDE row */
-function mgrApprRow(m,r,depth){
-  const data=getPjp(r.fr,pjpMonth);const pad=12+depth*22;
-  const nameCol=MGR_APPR_GROUP==='emp'
-    ? `<b>${r.bde}</b> <span style="font-size:11px;color:var(--txt-mute)">(${r.fr})</span>`
-    : `<b>${r.fr}</b> <span style="font-size:11px;color:var(--txt-mute)">${r.bde}</span>`;
-  return `<tr ${MGR_REVIEW_FR===r.fr?'style="background:rgba(25,211,197,.06)"':''}>
-    <td style="padding-left:${pad}px">${nameCol}</td>
-    <td><span class="chip ${MGR_ST_CLS[data.status]||'mute'}">${MGR_ST_LABEL[data.status]||data.status}</span></td>
-    <td style="text-align:right" class="tnum">${fmtN(mgrPlannedBtl(r.fr))}</td>
-    <td style="text-align:right" class="tnum">${fmtN(r.tgt)}</td>
-    <td>${mgrPlanAction(m,r.fr)}</td></tr>`;
-}
-
-function mgrCockpitBody(m,cockpit){
-  const cockHead=`<thead><tr><th>${m.level==='bdm'?'BDE · Franchise':'BDM / BDE'}</th><th style="text-align:right">Target (btl)</th><th style="text-align:right">Buying pot</th><th style="text-align:right">Non-buying pot</th><th style="text-align:right">Gap (tgt−buying)</th><th>Who handles</th><th>PJP status</th></tr></thead>`;
-  const bdeRow=(r,depth)=>{
-    const handleCls=r.gapPct<=15?'green':r.gapPct<=40?'amber':'red';
-    const handleTxt=r.gapPct<=15?`🟢 ${r.gapPct}% — BDE handles`:r.gapPct<=40?`🟡 ${r.gapPct}% short — light help`:`🔴 ${r.gapPct}% short — you work this`;
-    const pad=12+depth*22;
-    return `<tr>
-      <td style="padding-left:${pad}px"><b>${r.bde}</b><div style="font-size:11px;color:var(--txt-mute)">${r.fr}</div></td>
-      <td style="text-align:right" class="tnum" style="color:var(--red)">${fmtN(r.tgt)}</td>
-      <td style="text-align:right" class="tnum" style="color:var(--green)">${fmtN(r.buyPot)}</td>
-      <td style="text-align:right" class="tnum" style="color:var(--violet)">${fmtN(r.nbPot)}</td>
-      <td style="text-align:right" class="tnum">${fmtN(r.gap)}</td>
-      <td><span class="chip ${handleCls}">${handleTxt}</span></td>
-      <td><span class="chip ${MGR_ST_CLS[r.st]||'mute'}">${MGR_ST_LABEL[r.st]||r.st}</span></td></tr>`;
-  };
-  if(!cockpit.length)return `<div style="padding:24px;text-align:center;color:var(--txt-mute)">No franchises under you.</div>`;
-
-  // BDM level: flat BDE list (no sub-level below him)
-  if(m.level==='bdm'){
-    return `<div class="tbl-scroll"><table>${cockHead}<tbody>${cockpit.map(r=>bdeRow(r,0)).join('')}</tbody></table></div>`;
-  }
-
-  // FILTER mode: optional single-BDM filter, flat rows
-  if(MGR_COCK_MODE==='filter'){
-    const rows=(MGR_COCK_BDM==='All'?cockpit:cockpit.filter(r=>r.bdm===MGR_COCK_BDM)).slice().sort((a,b)=>a.fr.localeCompare(b.fr));
-    return `<div class="tbl-scroll"><table>${cockHead}<tbody>${rows.length?rows.map(r=>bdeRow(r,0)).join(''):`<tr><td colspan="7" style="text-align:center;color:var(--txt-mute);padding:20px">No BDEs for this BDM.</td></tr>`}</tbody></table></div>`;
-  }
-
-  // DRILL-DOWN mode: BDM totals collapsed, expand to BDEs
-  const byBdm={};
-  cockpit.forEach(r=>{const bd=r.bdm&&r.bdm!=='-'?r.bdm:'(no BDM)';(byBdm[bd]=byBdm[bd]||[]).push(r);});
-  let body='';
-  Object.keys(byBdm).sort().forEach(bd=>{
-    const grp=byBdm[bd];const key='COCK:'+bd;const open=MGR_COCK_EXP.has(key);
-    let gTgt=0,gBuy=0,gNb=0,gGap=0;grp.forEach(r=>{gTgt+=r.tgt;gBuy+=r.buyPot;gNb+=r.nbPot;gGap+=r.gap;});
-    const gPct=gTgt?Math.round(gGap/gTgt*100):0;
-    const hCls=gPct<=15?'green':gPct<=40?'amber':'red';
-    const hTxt=gPct<=15?`🟢 ${gPct}% — team covers`:gPct<=40?`🟡 ${gPct}% short`:`🔴 ${gPct}% short — focus here`;
-    body+=`<tr class="clickable" style="background:rgba(155,140,255,.06)" onclick="mgrCockToggle('${jsq(key)}')">
-      <td><span style="display:inline-block;width:14px;color:var(--violet)">${open?'▾':'▸'}</span> 👤 <b>${bd}</b> <span style="font-size:11px;color:var(--txt-mute)">(${grp.length} BDE${grp.length!==1?'s':''})</span></td>
-      <td style="text-align:right" class="tnum" style="color:var(--red)">${fmtN(gTgt)}</td>
-      <td style="text-align:right" class="tnum" style="color:var(--green)">${fmtN(gBuy)}</td>
-      <td style="text-align:right" class="tnum" style="color:var(--violet)">${fmtN(gNb)}</td>
-      <td style="text-align:right" class="tnum">${fmtN(gGap)}</td>
-      <td><span class="chip ${hCls}">${hTxt}</span></td>
-      <td></td></tr>`;
-    if(open)grp.slice().sort((a,b)=>a.fr.localeCompare(b.fr)).forEach(r=>{body+=bdeRow(r,1);});
-  });
-  return `<div class="tbl-scroll"><table>${cockHead}<tbody>${body}</tbody></table></div>`;
-}
-function mgrCockToggle(k){MGR_COCK_EXP.has(k)?MGR_COCK_EXP.delete(k):MGR_COCK_EXP.add(k);renderMgrPlanner();}
-
-function mgrApprovalsBody(m,mo,cockpit){
-  if(!cockpit.length)return `<div style="padding:24px;text-align:center;color:var(--txt-mute)">Nothing to review.</div>`;
-  const head=`<thead><tr><th>${MGR_APPR_GROUP==='emp'?'Employee':'Franchise'} &amp; status</th><th>PJP status</th><th style="text-align:right">Planned (btl)</th><th style="text-align:right">Target</th><th></th></tr></thead>`;
-
-  // FILTER mode: flat list (franchise-wise or employee-wise), always sorted alphabetically
-  if(MGR_APPR_MODE==='filter'){
-    const rows=cockpit.slice().sort((a,b)=> (MGR_APPR_GROUP==='emp'?a.bde.localeCompare(b.bde):a.fr.localeCompare(b.fr)));
-    return `<div class="tbl-scroll"><table>${head}<tbody>${rows.map(r=>mgrApprRow(m,r,0)).join('')}</tbody></table></div>`;
-  }
-
-  // DRILL-DOWN mode: BDM → their BDEs (only meaningful for State Head / NSM; BDM sees flat)
-  if(m.level==='bdm'){
-    // BDM: show own BDEs flat + a header for his own plan handled separately below
-    return `<div class="tbl-scroll"><table>${head}<tbody>${cockpit.map(r=>mgrApprRow(m,r,0)).join('')}</tbody></table></div>`;
-  }
-  // group cockpit by BDM
-  const byBdm={};
-  cockpit.forEach(r=>{const bfr=BURNFR.find(f=>f.name===r.fr)||{};const bd=bfr.bdm&&bfr.bdm!=='-'?bfr.bdm:'(no BDM)';(byBdm[bd]=byBdm[bd]||[]).push(r);});
-  let body='';
-  Object.keys(byBdm).sort().forEach(bd=>{
-    const grp=byBdm[bd];const key='BDM:'+bd;const open=MGR_APPR_EXP.has(key);
-    // BDM's own plan status
-    const bdmOwn=(bd!=='(no BDM)')?getMgrOwnByName('bdm',bd,mo):null;
-    const ownChip=bdmOwn?`<span class="chip ${MGR_ST_CLS[bdmOwn.status]||'mute'}" style="margin-left:8px;font-size:10px">own: ${MGR_ST_LABEL[bdmOwn.status]||bdmOwn.status}</span>`:'';
-    let gTgt=0,gPlan=0;grp.forEach(r=>{gTgt+=r.tgt;gPlan+=mgrPlannedBtl(r.fr);});
-    body+=`<tr class="clickable" style="background:rgba(155,140,255,.06)" onclick="mgrApprToggle('${jsq(key)}')">
-      <td><span style="display:inline-block;width:14px;color:var(--violet)">${open?'▾':'▸'}</span> 👤 <b>${bd}</b> <span style="font-size:11px;color:var(--txt-mute)">(${grp.length} BDE${grp.length!==1?'s':''})</span>${ownChip}</td>
-      <td></td>
-      <td style="text-align:right" class="tnum">${fmtN(gPlan)}</td>
-      <td style="text-align:right" class="tnum">${fmtN(gTgt)}</td>
-      <td></td></tr>`;
-    if(open){
-      grp.slice().sort((a,b)=>a.fr.localeCompare(b.fr)).forEach(r=>{body+=mgrApprRow(m,r,1);});
-    }
-  });
-  return `<div class="tbl-scroll"><table>${head}<tbody>${body}</tbody></table></div>`;
-}
-function mgrApprToggle(k){MGR_APPR_EXP.has(k)?MGR_APPR_EXP.delete(k):MGR_APPR_EXP.add(k);renderMgrPlanner();}
-/* fetch a manager's own plan by level+name without switching session identity */
-function getMgrOwnByName(level,name,mo){
-  const key='__MGR__'+level+'__'+(name||'');
-  if(!PJP_STORE[key]||!PJP_STORE[key][mo])return null;
-  return PJP_STORE[key][mo];
-}
-
-function mgrOpenReview(fr){MGR_REVIEW_FR=fr;renderMgrPlanner();}
-function mgrEditDay(fr,i,field,v){
-  const data=getPjp(fr,pjpMonth);const d=data.days[i];if(!d)return;
-  d[field]=(field==='route'||field==='remark')?v:(Number(v)||0);
-  if(field==='route'&&!v){d.buyTarget=0;d.nbOutlets=0;d.nbPot=0;}
-  const m=mgrIdentity();const own=getMgrOwn(m,pjpMonth);
-  if(own.days[i]&&own.days[i].joinFrom===fr){
-    if(field==='route'){own.days[i].route=v; if(!v){own.days[i]={dayNum:i+1,fr:'',route:'',buyTarget:0,nbOutlets:0,nbPot:0,remark:'',joinFrom:''};}}
-  }
-  renderMgrPlanner();
-}
-function mgrToggleJoin(fr,i,on){
-  const m=mgrIdentity();const own=getMgrOwn(m,pjpMonth);
-  const src=getPjp(fr,pjpMonth).days[i];
-  if(on){
-    if(own.days[i]&&own.days[i].route&&own.days[i].joinFrom!==fr){toast('You already have a plan that day','');renderMgrPlanner();return;}
-    own.days[i]={dayNum:i+1,fr,route:src.route,buyTarget:Number(src.buyTarget)||0,nbOutlets:0,nbPot:0,remark:'joint work',joinFrom:fr};
-  }else{
-    if(own.days[i]&&own.days[i].joinFrom===fr)own.days[i]={dayNum:i+1,fr:'',route:'',buyTarget:0,nbOutlets:0,nbPot:0,remark:'',joinFrom:''};
-  }
-  renderMgrPlanner();
-}
-function mgrApprove(fr){
-  const m=mgrIdentity();const data=getPjp(fr,pjpMonth);
-  data.status=mgrApprovedStatus(m);
-  toast('Approved — now push it up','ok');renderMgrPlanner();
-}
-function mgrRequestCorrection(fr){
-  const note=prompt('What correction is needed? (sent back to the BDE)');
-  if(note===null)return;
-  const data=getPjp(fr,pjpMonth);
-  data.status='CORRECTION';data.correctionNote=note;
-  toast('Sent back for correction','ok');MGR_REVIEW_FR=null;renderMgrPlanner();
-}
-function mgrPush(fr){
-  const m=mgrIdentity();const data=getPjp(fr,pjpMonth);
-  data.status=mgrPushedStatus(m);
-  toast(`Pushed to ${m.level==='bdm'?'State Head':m.level==='sh'?'NSM':'—'} ✓`,'ok');MGR_REVIEW_FR=null;renderMgrPlanner();
-}
-function mgrOwnEdit(i,field,v){
-  const m=mgrIdentity();const own=getMgrOwn(m,pjpMonth);const d=own.days[i];if(!d)return;
-  d[field]=(field==='fr'||field==='route'||field==='remark')?v:(Number(v)||0);
-  if(field==='fr'){d.route='';d.buyTarget=0;d.nbPot=0;}
-  if(field==='route'){d.joinFrom='';const ref=d.fr&&v?pjpRouteRef(d.fr,v):null;if(ref&&!d.buyTarget)d.buyTarget=ref.buyPot;}
-  renderMgrPlanner();
-}
-function mgrOwnClear(i){
-  const m=mgrIdentity();const own=getMgrOwn(m,pjpMonth);
-  own.days[i]={dayNum:i+1,fr:'',route:'',buyTarget:0,nbOutlets:0,nbPot:0,remark:'',joinFrom:''};
-  renderMgrPlanner();
-}
-function mgrOwnSubmit(){
-  const m=mgrIdentity();const own=getMgrOwn(m,pjpMonth);
-  own.status=m.level==='bdm'?'BDM_PUSHED':m.level==='sh'?'SH_PUSHED':'NSM_APPROVED';
-  toast(`Your plan submitted ${m.level==='bdm'?'to State Head':m.level==='sh'?'to NSM':''} ✓`,'ok');renderMgrPlanner();
+  pjpSelDay=null;renderPjp();toast('PJP submitted to BDM ✓','ok');
 }
 
 
@@ -4207,7 +3190,9 @@ const BURN_MAY={"BAVIYA_AGENCY_DS_SOUTH_ASIAN":{"share":43935,"expense":217342,"
   REAL_ROUTES.forEach(r=>ROUTEDATA.routes.push({route:r.rt,fr:r.fr,state:stOf[r.fr]||r.s,bdm:r.bdm,outlets:r.o,buy:r.b,nonbuy:r.nb,buyPot:r.bp,nonbuyPot:r.np,repeats:4}));
   dsDate=TODAY_DATE;
 })();
-BURNROWS=BURNFR.map(f=>({fr:f.name,state:f.state,bdm:f.bdm,bde:f.bde,routes:f.routes,month:'2026-05',monthName:'May 2026',date:new Date(2026,4,1),spend:f.expense,share:f.share,burn:f.burn,target:f.expense,achieved:f.share}));
+BURN_BY_MONTH['2026-05']={};
+BURNFR.forEach(f=>{BURN_BY_MONTH['2026-05'][f.name]={spend:f.expense,share:f.share};});
+rebuildBurnRows();
 /* real May 2026 expense breakdown (from burn reports) → Expense master */
 (function loadExpenseMaster(){
   const SHARED={admin:2545432,infra:1108667,launch:111908,active:30};
@@ -4228,13 +3213,11 @@ BURNROWS=BURNFR.map(f=>({fr:f.name,state:f.state,bdm:f.bdm,bde:f.bde,routes:f.ro
 (function loadRealUsers(){
   const ROSTER={"SIVAGANGAI_DS_JLS DISTRIBUTOR":{"bdm":"Nirmal","bde":"Prem"},"SALEM_DISTRIBUTER_NEW":{"bdm":"Kamesh","bde":"Suresh"},"TIRUPPUR_DS_AVS TRADERS":{"bdm":"","bde":"Kamesh"},"CHE_PALLAVARAM_SHIMA_POP&FIZZ":{"bdm":"Chetan","bde":"Chetan"},"BAVIYA_AGENCY_DS_SOUTH_ASIAN":{"bdm":"Chetan","bde":"Subramani"},"CHENNAI DIRECT_DS_SOUTH ASIAN FOOD":{"bdm":"Chetan","bde":"Mani"},"TRICHY_DIRECT_DS_SOUTH ASIAN FOOD":{"bdm":"","bde":"Nirmal"},"NELLORE_K SQUARE DISTRIBUTORS":{"bdm":"Sai Kumar","bde":"Shaik Masthan"},"GUNTUR_DS_ANVIKSHA DISTRIBUTOR AND TRADERS":{"bdm":"Sai Kumar","bde":"Yeshwanth"},"ANNAMAYYA_SRI DEVI BEVERAGES":{"bdm":"Sai Kumar","bde":"Kesavulu"},"ANANTAPUR_SRI MAHIMA ENTERPRISES":{"bdm":"Shabbir","bde":"Pushpakula"},"CHITTOOR_DS_PS ASSOCIATES":{"bdm":"Sai Kumar","bde":"Surendra"},"HYDERABAD_DS_V ENTERPRISES":{"bdm":"","bde":"Avinash"},"PALNADU_DS_GK ENTERPRICES":{"bdm":"Prasad","bde":"Manichandra"},"ANAKAPALLE_DS_OM GANAPATHI ENTERPRISES":{"bdm":"Prasad","bde":"Guna"},"VISAKHAPATNAM_DS_REDDY ENTERPRISES":{"bdm":"Prasad","bde":""},"NIRMAL_DS_VIJAYA LAXMI DISTRIBUTIORS":{"bdm":"Avinash","bde":"Sandeep"},"BELGAUM_IBRAHIM SODA STATION":{"bdm":"Iftiyar","bde":"Soyab"},"HUBLI_REDDY ENTERPRISES":{"bdm":"Iftiyar","bde":"Suraj"},"CHIKKABALLAPUR_DS_NAVANEETHA ENTERPRISES":{"bdm":"","bde":"Hemanth"},"KOLHAPUR_DS_SOHAAN DISTRIBUTOR":{"bdm":"Abhinandhan","bde":"Utkarsh"},"NAGPUR_DS_PRAVESH ANIL JAIN HUF":{"bdm":"Sahil","bde":"Ritish"},"SATARA_RELIANT BRUDER":{"bdm":"Abhinandhan","bde":"Suraj Anil"},"SANGLI_DESHMUKH_ENTERPRISES":{"bdm":"Abhinandhan","bde":"Pravin"},"AKOLA_MEDHAANSH_TRADERS":{"bdm":"","bde":"Aditya"},"NAGPUR_02_BEVERAGE_BLISS":{"bdm":"Sahil","bde":"Meshram"},"AHMEDABAD_BEVERAGE_BLOOM":{"bdm":"","bde":"Krishna"},"JAMSHEDPUR_BISHAKHA_AGARWAL":{"bdm":"","bde":"Mahtab"}};
   const SH={"Andhra Pradesh":"Ajay Kumar","Karnataka":"Suresh","Gujarat":"Nikhil","Tamil Nadu":"Thulasi"};
-  FRS.forEach(f=>{const r=ROSTER[f.name];if(r){f.bdm=r.bdm?r.bdm:'-';f.bde=r.bde?r.bde:'-';}if(SH[f.state])f.sh=SH[f.state];});
-  BURNFR.forEach(f=>{const r=ROSTER[f.name];if(r){f.bdm=r.bdm?r.bdm:'-';f.bde=r.bde?r.bde:'-';}});
+  FRS.forEach(f=>{const r=ROSTER[f.name];if(r){if(r.bdm)f.bdm=r.bdm;if(r.bde)f.bde=r.bde;}if(SH[f.state])f.sh=SH[f.state];});
+  BURNFR.forEach(f=>{const r=ROSTER[f.name];if(r){if(r.bdm)f.bdm=r.bdm;if(r.bde)f.bde=r.bde;}});
   ROUTEDATA.routes.forEach(rt=>{const f=FRS.find(x=>x.name===rt.fr);if(f&&f.bdm&&f.bdm!=='-')rt.bdm=f.bdm;});
   USERS=[{"user":"admin","pass":"admin","role":"admin","scopeVal":"","name":"Chandru (CVO)"},{"user":"nsm","pass":"Nsm@thul2025","role":"nsm","scopeVal":"","name":"Thulasi (NSM)"},{"user":"launch","pass":"Launch@yog2025","role":"nsm","scopeVal":"","name":"Yogaraj (NMEM)"},{"user":"finance","pass":"Fin@team2025","role":"finance","scopeVal":"","name":"Finance Team"},{"user":"sh_ap","pass":"Sh@Ajayku2026","role":"statehead","scopeVal":"Andhra Pradesh","name":"Ajay Kumar — Andhra Pradesh State Head"},{"user":"sh_ka","pass":"Sh@Suresh2026","role":"statehead","scopeVal":"Karnataka","name":"Suresh — Karnataka State Head"},{"user":"sh_gj","pass":"Sh@Nikhil2026","role":"statehead","scopeVal":"Gujarat","name":"Nikhil — Gujarat State Head"},{"user":"bdm_nirmal","pass":"Bdm@Nirmal2026","role":"bdm","scopeVal":"Nirmal","name":"Nirmal (BDM)"},{"user":"bdm_kamesh","pass":"Bdm@Kamesh2026","role":"bdm","scopeVal":"Kamesh","name":"Kamesh (BDM)"},{"user":"bdm_chetan","pass":"Bdm@Chetan2026","role":"bdm","scopeVal":"Chetan","name":"Chetan (BDM)"},{"user":"bdm_saikuma","pass":"Bdm@Saikum2026","role":"bdm","scopeVal":"Sai Kumar","name":"Sai Kumar (BDM)"},{"user":"bdm_shabbir","pass":"Bdm@Shabbi2026","role":"bdm","scopeVal":"Shabbir","name":"Shabbir (BDM)"},{"user":"bdm_prasad","pass":"Bdm@Prasad2026","role":"bdm","scopeVal":"Prasad","name":"Prasad (BDM)"},{"user":"bdm_avinash","pass":"Bdm@Avinas2026","role":"bdm","scopeVal":"Avinash","name":"Avinash (BDM)"},{"user":"bdm_iftiyar","pass":"Bdm@Iftiya2026","role":"bdm","scopeVal":"Iftiyar","name":"Iftiyar (BDM)"},{"user":"bdm_abhinan","pass":"Bdm@Abhina2026","role":"bdm","scopeVal":"Abhinandhan","name":"Abhinandhan (BDM)"},{"user":"bdm_sahil","pass":"Bdm@Sahil2026","role":"bdm","scopeVal":"Sahil","name":"Sahil (BDM)"},{"user":"fr_lucknow","pass":"Fr@Luckno2026","role":"franchisee","scopeVal":"LUCKNOW_SEEMA_BEVERAGES","name":"Lucknow Franchisee"},{"user":"bde_jamshedp","pass":"Bde@Jamshe2026","role":"bde","scopeVal":"JAMSHEDPUR_BISHAKHA_AGARWAL","name":"Mahtab — Jamshedpur BDE"},{"user":"fr_jamshedp","pass":"Fr@Jamshe2026","role":"franchisee","scopeVal":"JAMSHEDPUR_BISHAKHA_AGARWAL","name":"Jamshedpur Franchisee"},{"user":"bde_chennai","pass":"Bde@Chenna2026","role":"bde","scopeVal":"CHENNAI DIRECT_DS_SOUTH ASIAN FOOD","name":"Mani — Chennai Direct BDE"},{"user":"fr_chennai","pass":"Fr@Chenna2026","role":"franchisee","scopeVal":"CHENNAI DIRECT_DS_SOUTH ASIAN FOOD","name":"Chennai Direct Franchisee"},{"user":"bde_guntur","pass":"Bde@Guntur2026","role":"bde","scopeVal":"GUNTUR_DS_ANVIKSHA DISTRIBUTOR AND TRADERS","name":"Yeshwanth — Guntur BDE"},{"user":"fr_guntur","pass":"Fr@Guntur2026","role":"franchisee","scopeVal":"GUNTUR_DS_ANVIKSHA DISTRIBUTOR AND TRADERS","name":"Guntur Franchisee"},{"user":"bde_trichy","pass":"Bde@Trichy2026","role":"bde","scopeVal":"TRICHY_DIRECT_DS_SOUTH ASIAN FOOD","name":"Nirmal — Trichy BDE"},{"user":"fr_trichy","pass":"Fr@Trichy2026","role":"franchisee","scopeVal":"TRICHY_DIRECT_DS_SOUTH ASIAN FOOD","name":"Trichy Franchisee"},{"user":"bde_chikkaba","pass":"Bde@Chikka2026","role":"bde","scopeVal":"CHIKKABALLAPUR_DS_NAVANEETHA ENTERPRISES","name":"Hemanth — Chikkaballapur BDE"},{"user":"fr_chikkaba","pass":"Fr@Chikka2026","role":"franchisee","scopeVal":"CHIKKABALLAPUR_DS_NAVANEETHA ENTERPRISES","name":"Chikkaballapur Franchisee"},{"user":"bde_tiruppur","pass":"Bde@Tirupp2026","role":"bde","scopeVal":"TIRUPPUR_DS_AVS TRADERS","name":"Kamesh — Tiruppur BDE"},{"user":"fr_tiruppur","pass":"Fr@Tirupp2026","role":"franchisee","scopeVal":"TIRUPPUR_DS_AVS TRADERS","name":"Tiruppur Franchisee"},{"user":"bde_hyderaba","pass":"Bde@Hydera2026","role":"bde","scopeVal":"HYDERABAD_DS_V ENTERPRISES","name":"Avinash — Hyderabad BDE"},{"user":"fr_hyderaba","pass":"Fr@Hydera2026","role":"franchisee","scopeVal":"HYDERABAD_DS_V ENTERPRISES","name":"Hyderabad Franchisee"},{"user":"bde_chittoor","pass":"Bde@Chitto2026","role":"bde","scopeVal":"CHITTOOR_DS_PS ASSOCIATES","name":"Surendra — Chittoor BDE"},{"user":"fr_chittoor","pass":"Fr@Chitto2026","role":"franchisee","scopeVal":"CHITTOOR_DS_PS ASSOCIATES","name":"Chittoor Franchisee"},{"user":"bde_sivagang","pass":"Bde@Sivaga2026","role":"bde","scopeVal":"SIVAGANGAI_DS_JLS DISTRIBUTOR","name":"Prem — Sivagangai BDE"},{"user":"fr_sivagang","pass":"Fr@Sivaga2026","role":"franchisee","scopeVal":"SIVAGANGAI_DS_JLS DISTRIBUTOR","name":"Sivagangai Franchisee"},{"user":"bde_anakapal","pass":"Bde@Anakap2026","role":"bde","scopeVal":"ANAKAPALLE_DS_OM GANAPATHI ENTERPRISES","name":"Guna — Anakapalle BDE"},{"user":"fr_anakapal","pass":"Fr@Anakap2026","role":"franchisee","scopeVal":"ANAKAPALLE_DS_OM GANAPATHI ENTERPRISES","name":"Anakapalle Franchisee"},{"user":"bde_palnadu","pass":"Bde@Palnad2026","role":"bde","scopeVal":"PALNADU_DS_GK ENTERPRICES","name":"Manichandra — Palnadu BDE"},{"user":"fr_palnadu","pass":"Fr@Palnad2026","role":"franchisee","scopeVal":"PALNADU_DS_GK ENTERPRICES","name":"Palnadu Franchisee"},{"user":"bde_nirmal","pass":"Bde@Nirmal2026","role":"bde","scopeVal":"NIRMAL_DS_VIJAYA LAXMI DISTRIBUTIORS","name":"Sandeep — Nirmal BDE"},{"user":"fr_nirmal","pass":"Fr@Nirmal2026","role":"franchisee","scopeVal":"NIRMAL_DS_VIJAYA LAXMI DISTRIBUTIORS","name":"Nirmal Franchisee"},{"user":"bde_nagpur","pass":"Bde@Nagpur2026","role":"bde","scopeVal":"NAGPUR_DS_PRAVESH ANIL JAIN HUF","name":"Ritish — Nagpur BDE"},{"user":"fr_nagpur","pass":"Fr@Nagpur2026","role":"franchisee","scopeVal":"NAGPUR_DS_PRAVESH ANIL JAIN HUF","name":"Nagpur Franchisee"},{"user":"bde_kolhapur","pass":"Bde@Kolhap2026","role":"bde","scopeVal":"KOLHAPUR_DS_SOHAAN DISTRIBUTOR","name":"Utkarsh — Kolhapur BDE"},{"user":"fr_kolhapur","pass":"Fr@Kolhap2026","role":"franchisee","scopeVal":"KOLHAPUR_DS_SOHAAN DISTRIBUTOR","name":"Kolhapur Franchisee"},{"user":"fr_amravati","pass":"Fr@Amrava2026","role":"franchisee","scopeVal":"AMRAVATI_PRUTHVIRAJ_DS","name":"Amravati Franchisee"},{"user":"fr_raipur","pass":"Fr@Raipur2026","role":"franchisee","scopeVal":"RAIPUR_DS_FZ_ENTERPRICES","name":"Raipur Franchisee"},{"user":"bde_sangli","pass":"Bde@Sangli2026","role":"bde","scopeVal":"SANGLI_DESHMUKH_ENTERPRISES","name":"Pravin — Sangli BDE"},{"user":"fr_sangli","pass":"Fr@Sangli2026","role":"franchisee","scopeVal":"SANGLI_DESHMUKH_ENTERPRISES","name":"Sangli Franchisee"},{"user":"bde_belgaum","pass":"Bde@Belgau2026","role":"bde","scopeVal":"BELGAUM_IBRAHIM SODA STATION","name":"Soyab — Belgaum BDE"},{"user":"fr_belgaum","pass":"Fr@Belgau2026","role":"franchisee","scopeVal":"BELGAUM_IBRAHIM SODA STATION","name":"Belgaum Franchisee"},{"user":"bde_nagpur2","pass":"Bde@Nagpur2026","role":"bde","scopeVal":"NAGPUR_02_BEVERAGE_BLISS","name":"Meshram — Nagpur BDE"},{"user":"fr_nagpur2","pass":"Fr@Nagpur2026","role":"franchisee","scopeVal":"NAGPUR_02_BEVERAGE_BLISS","name":"Nagpur Franchisee"},{"user":"bde_che","pass":"Bde@Che2026","role":"bde","scopeVal":"CHE_PALLAVARAM_SHIMA_POP&FIZZ","name":"Chetan — Che BDE"},{"user":"fr_che","pass":"Fr@Che2026","role":"franchisee","scopeVal":"CHE_PALLAVARAM_SHIMA_POP&FIZZ","name":"Che Franchisee"},{"user":"bde_hubli","pass":"Bde@Hubli2026","role":"bde","scopeVal":"HUBLI_REDDY ENTERPRISES","name":"Suraj — Hubli BDE"},{"user":"fr_hubli","pass":"Fr@Hubli2026","role":"franchisee","scopeVal":"HUBLI_REDDY ENTERPRISES","name":"Hubli Franchisee"},{"user":"bde_anantapu","pass":"Bde@Ananta2026","role":"bde","scopeVal":"ANANTAPUR_SRI MAHIMA ENTERPRISES","name":"Pushpakula — Anantapur BDE"},{"user":"fr_anantapu","pass":"Fr@Ananta2026","role":"franchisee","scopeVal":"ANANTAPUR_SRI MAHIMA ENTERPRISES","name":"Anantapur Franchisee"},{"user":"fr_ahmdnaga","pass":"Fr@Ahmdna2026","role":"franchisee","scopeVal":"AHMDNAGAR_GURUDATTA","name":"Ahmdnagar Franchisee"},{"user":"bde_nellore","pass":"Bde@Nellor2026","role":"bde","scopeVal":"NELLORE_K SQUARE DISTRIBUTORS","name":"Shaik Masthan — Nellore BDE"},{"user":"fr_nellore","pass":"Fr@Nellor2026","role":"franchisee","scopeVal":"NELLORE_K SQUARE DISTRIBUTORS","name":"Nellore Franchisee"},{"user":"bde_annamayy","pass":"Bde@Annama2026","role":"bde","scopeVal":"ANNAMAYYA_SRI DEVI BEVERAGES","name":"Kesavulu — Annamayya BDE"},{"user":"fr_annamayy","pass":"Fr@Annama2026","role":"franchisee","scopeVal":"ANNAMAYYA_SRI DEVI BEVERAGES","name":"Annamayya Franchisee"},{"user":"bde_satara","pass":"Bde@Satara2026","role":"bde","scopeVal":"SATARA_RELIANT BRUDER","name":"Suraj Anil — Satara BDE"},{"user":"fr_satara","pass":"Fr@Satara2026","role":"franchisee","scopeVal":"SATARA_RELIANT BRUDER","name":"Satara Franchisee"},{"user":"bde_salem","pass":"Bde@Salem2026","role":"bde","scopeVal":"SALEM_DISTRIBUTER_NEW","name":"Suresh — Salem BDE"},{"user":"fr_salem","pass":"Fr@Salem2026","role":"franchisee","scopeVal":"SALEM_DISTRIBUTER_NEW","name":"Salem Franchisee"},{"user":"bde_baviya","pass":"Bde@Baviya2026","role":"bde","scopeVal":"BAVIYA_AGENCY_DS_SOUTH_ASIAN","name":"Subramani — Baviya BDE"},{"user":"fr_baviya","pass":"Fr@Baviya2026","role":"franchisee","scopeVal":"BAVIYA_AGENCY_DS_SOUTH_ASIAN","name":"Baviya Franchisee"},{"user":"bde_akola","pass":"Bde@Akola2026","role":"bde","scopeVal":"AKOLA_MEDHAANSH_TRADERS","name":"Aditya — Akola BDE"},{"user":"fr_akola","pass":"Fr@Akola2026","role":"franchisee","scopeVal":"AKOLA_MEDHAANSH_TRADERS","name":"Akola Franchisee"},{"user":"bde_ahmedaba","pass":"Bde@Ahmeda2026","role":"bde","scopeVal":"AHMEDABAD_BEVERAGE_BLOOM","name":"Krishna — Ahmedabad BDE"},{"user":"fr_ahmedaba","pass":"Fr@Ahmeda2026","role":"franchisee","scopeVal":"AHMEDABAD_BEVERAGE_BLOOM","name":"Ahmedabad Franchisee"},{"user":"fr_visakhap","pass":"Fr@Visakh2026","role":"franchisee","scopeVal":"VISAKHAPATNAM_DS_REDDY ENTERPRISES","name":"Visakhapatnam Franchisee"},{"user":"fr_tirupath","pass":"Fr@Tirupa2026","role":"franchisee","scopeVal":"TIRUPATHI_BALAJI BEVERAGES","name":"Tirupathi Franchisee"}];
   EMP.length=0; [{"id":1,"name":"Ajay Kumar","pos":"State Head","state":"Andhra Pradesh","reportsTo":"NSM"},{"id":2,"name":"Suresh","pos":"State Head","state":"Karnataka","reportsTo":"NSM"},{"id":3,"name":"Nikhil","pos":"State Head","state":"Gujarat","reportsTo":"NSM"},{"id":4,"name":"Nirmal","pos":"BDM","state":"Tamil Nadu","reportsTo":"Thulasi"},{"id":5,"name":"Kamesh","pos":"BDM","state":"Tamil Nadu","reportsTo":"Thulasi"},{"id":6,"name":"Chetan","pos":"BDM","state":"Tamil Nadu","reportsTo":"Thulasi"},{"id":7,"name":"Sai Kumar","pos":"BDM","state":"Andhra Pradesh","reportsTo":"Ajay Kumar"},{"id":8,"name":"Shabbir","pos":"BDM","state":"Andhra Pradesh","reportsTo":"Ajay Kumar"},{"id":9,"name":"Prasad","pos":"BDM","state":"Andhra Pradesh","reportsTo":"Ajay Kumar"},{"id":10,"name":"Avinash","pos":"BDM","state":"Andhra Pradesh","reportsTo":"Ajay Kumar"},{"id":11,"name":"Iftiyar","pos":"BDM","state":"Karnataka","reportsTo":"Suresh"},{"id":12,"name":"Abhinandhan","pos":"BDM","state":"Maharashtra","reportsTo":"NSM"},{"id":13,"name":"Sahil","pos":"BDM","state":"Maharashtra","reportsTo":"NSM"},{"id":14,"name":"Mahtab","pos":"BDE","state":"Jharkhand","reportsTo":"NSM"},{"id":15,"name":"Mani","pos":"BDE","state":"Tamil Nadu","reportsTo":"Chetan"},{"id":16,"name":"Yeshwanth","pos":"BDE","state":"Andhra Pradesh","reportsTo":"Sai Kumar"},{"id":17,"name":"Nirmal","pos":"BDE","state":"Tamil Nadu","reportsTo":"Thulasi"},{"id":18,"name":"Hemanth","pos":"BDE","state":"Karnataka","reportsTo":"Suresh"},{"id":19,"name":"Kamesh","pos":"BDE","state":"Tamil Nadu","reportsTo":"Thulasi"},{"id":20,"name":"Avinash","pos":"BDE","state":"Andhra Pradesh","reportsTo":"Ajay Kumar"},{"id":21,"name":"Surendra","pos":"BDE","state":"Andhra Pradesh","reportsTo":"Sai Kumar"},{"id":22,"name":"Prem","pos":"BDE","state":"Tamil Nadu","reportsTo":"Nirmal"},{"id":23,"name":"Guna","pos":"BDE","state":"Andhra Pradesh","reportsTo":"Prasad"},{"id":24,"name":"Manichandra","pos":"BDE","state":"Andhra Pradesh","reportsTo":"Prasad"},{"id":25,"name":"Sandeep","pos":"BDE","state":"Andhra Pradesh","reportsTo":"Avinash"},{"id":26,"name":"Ritish","pos":"BDE","state":"Maharashtra","reportsTo":"Sahil"},{"id":27,"name":"Utkarsh","pos":"BDE","state":"Maharashtra","reportsTo":"Abhinandhan"},{"id":28,"name":"Pravin","pos":"BDE","state":"Maharashtra","reportsTo":"Abhinandhan"},{"id":29,"name":"Soyab","pos":"BDE","state":"Karnataka","reportsTo":"Iftiyar"},{"id":30,"name":"Meshram","pos":"BDE","state":"Maharashtra","reportsTo":"Sahil"},{"id":31,"name":"Chetan","pos":"BDE","state":"Tamil Nadu","reportsTo":"Chetan"},{"id":32,"name":"Suraj","pos":"BDE","state":"Karnataka","reportsTo":"Iftiyar"},{"id":33,"name":"Pushpakula","pos":"BDE","state":"Andhra Pradesh","reportsTo":"Shabbir"},{"id":34,"name":"Shaik Masthan","pos":"BDE","state":"Andhra Pradesh","reportsTo":"Sai Kumar"},{"id":35,"name":"Kesavulu","pos":"BDE","state":"Andhra Pradesh","reportsTo":"Sai Kumar"},{"id":36,"name":"Suraj Anil","pos":"BDE","state":"Maharashtra","reportsTo":"Abhinandhan"},{"id":37,"name":"Suresh","pos":"BDE","state":"Tamil Nadu","reportsTo":"Kamesh"},{"id":38,"name":"Subramani","pos":"BDE","state":"Tamil Nadu","reportsTo":"Chetan"},{"id":39,"name":"Aditya","pos":"BDE","state":"Maharashtra","reportsTo":"NSM"},{"id":40,"name":"Krishna","pos":"BDE","state":"Maharashtra","reportsTo":"NSM"}].forEach(e=>EMP.push(e));
-  BURNROWS=BURNFR.map(f=>({fr:f.name,state:f.state,bdm:f.bdm,bde:f.bde,routes:f.routes,month:'2026-05',monthName:'May 2026',date:new Date(2026,4,1),spend:f.expense,share:f.share,burn:f.burn,target:f.expense,achieved:f.share}));
-  ROUTEDATA.routes.forEach(rt=>{const f=BURNFR.find(x=>x.name===rt.fr);if(f){rt.bdm=f.bdm;rt.state=f.state;}});
 })();
 
 function dsLatestUpload(dateKey){
@@ -4300,7 +3283,6 @@ function dsUpload(hour,file){
       const now=new Date();
       DATASYNC[dsDate][hour]={rows,count:rows.length,at:String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')};
       renderDataSync();
-      sbSaveDebounced();
       toast(hour+' — '+rows.length.toLocaleString('en-IN')+' rows loaded ✓','ok');
     }catch(err){toast('Error: '+err.message,'');}
   };
@@ -4322,7 +3304,6 @@ let P6_RANK_BY = 'amount';// 'amount' | 'pct'
 let P6_RANK_LVL = 'franchise'; // franchise|bde|bdm|state
 let P6_EXPAND = new Set(['India']);
 let P6_SEL_ROUTE = null;  // selected route for panel view
-let P6_TILE = null;       // clicked KPI tile: 'na' | 'ex' | 'lc' | null
 const P6F = {state:'All', pos:'All', emp:'All', fr:'All', from:'', to:''};
 
 /* ── column accessors ── */
@@ -4434,7 +3415,8 @@ function buildP6Filters(){
   $('#p6fEmp').classList.toggle('on',P6F.emp!=='All');
   ['from','to'].forEach(k=>{const el=$(`#p6f${k[0].toUpperCase()+k.slice(1)}`);if(el)el.classList.toggle('on',!!P6F[k]);});
 }
-function setP6Filter(k,v){P6F[k]=v;if(k==='state'){P6F.pos='All';P6F.emp='All';P6F.fr='All';}if(k==='pos')P6F.emp='All';P6_DATA=dsActiveData();buildP6Filters();renderP6();}function resetP6Filters(){Object.assign(P6F,{state:'All',pos:'All',emp:'All',fr:'All',from:'',to:''});P6_DATA=dsActiveData();buildP6Filters();renderP6();}
+function setP6Filter(k,v){P6F[k]=v;if(k==='state'){P6F.pos='All';P6F.emp='All';P6F.fr='All';}if(k==='pos')P6F.emp='All';P6_DATA=dsActiveData();buildP6Filters();renderP6();}
+function resetP6Filters(){Object.assign(P6F,{state:'All',pos:'All',emp:'All',fr:'All',from:'',to:''});P6_DATA=dsActiveData();buildP6Filters();renderP6();}
 
 /* ── upload handler ── */
 function p6HandleFile(file){
@@ -4493,17 +3475,12 @@ function renderP6(){
   else renderP6Rankings();
 }
 function renderP6Empty(){
-  // Only roles that can actually open Masters → Data Sync should see the upload prompt.
-  // Franchisees (and other view-only roles) just see a plain 'no report yet' message.
-  const mods = SESSION ? (ROLES[SESSION.role]?.modules) : null;
-  const canUpload = mods==='all' || (Array.isArray(mods) && mods.includes('masters'));
   $('#mod-p6').innerHTML=`
   <div style="max-width:520px;margin:60px auto;text-align:center;padding:40px;border:2px dashed var(--line2);border-radius:14px;background:var(--panel)">
     <div style="font-size:36px;margin-bottom:10px">📭</div>
-    <h3 style="font-family:'Archivo';font-size:16px;font-weight:800;color:var(--txt);margin-bottom:6px">No report available for ${dsDate}</h3>
-    ${canUpload?`<p style="font-size:12.5px;color:var(--txt-mute)">Go to <b style="color:var(--aqua)">Masters → 📂 Data Sync</b> and upload the YOLO Excel for this date.</p>
-    <button class="btn primary" style="margin-top:14px" onclick="switchModule('masters');document.querySelector('[data-v=datasync]').click()">Open Data Sync</button>`
-    :`<p style="font-size:12.5px;color:var(--txt-mute)">The sales report for this date hasn't been uploaded yet. It will appear here once it's available.</p>`}
+    <h3 style="font-family:'Archivo';font-size:16px;font-weight:800;color:var(--txt);margin-bottom:6px">No data for ${dsDate}</h3>
+    <p style="font-size:12.5px;color:var(--txt-mute)">Go to <b style="color:var(--aqua)">Masters → 📂 Data Sync</b> and upload the YOLO Excel for this date.</p>
+    <button class="btn primary" style="margin-top:14px" onclick="switchModule('masters');document.querySelector('[data-v=datasync]').click()">Open Data Sync</button>
   </div>`;
 }
 
@@ -4529,7 +3506,6 @@ function renderP6Upload(){
 /* ── Ops tab — drill-down ── */
 function p6TogExp(key){P6_EXPAND.has(key)?P6_EXPAND.delete(key):P6_EXPAND.add(key);P6_SEL_ROUTE=null;renderP6();}
 function p6SelRoute(key){P6_SEL_ROUTE=P6_SEL_ROUTE===key?null:key;renderP6();}
-function p6SetTile(t){P6_TILE=P6_TILE===t?null:t;renderP6();}
 
 function renderP6Ops(){
   const rows=p6Filter(P6_DATA);
@@ -4554,9 +3530,9 @@ function renderP6Ops(){
     <div class="p6-kpi"><div class="kl">Collected ₹</div><div class="kv" style="color:var(--green)">${fmtN(a.coll)}</div></div>
     <div class="p6-kpi"><div class="kl">Deficit ₹</div><div class="kv ${a.cashDiff<0?'neg':'pos'}">${fmtN(a.cashDiff)}</div></div>
     <div class="p6-kpi-sep"></div>
-    <div class="p6-kpi p6-kpi-click ${P6_TILE==='na'?'p6-kpi-on':''}" onclick="p6SetTile('na')" style="cursor:pointer" title="Click to see all not-achieved outlets"><div class="kl">🚩 Not Achieved</div><div class="kv" style="color:var(--red)">${fmtN(a.notAchieved)}</div></div>
-    <div class="p6-kpi p6-kpi-click ${P6_TILE==='ex'?'p6-kpi-on':''}" onclick="p6SetTile('ex')" style="cursor:pointer" title="Click to see all excess-achievement outlets"><div class="kl">⬆ Excess</div><div class="kv" style="color:var(--violet)">${fmtN(a.excess)}</div></div>
-    <div class="p6-kpi p6-kpi-click ${P6_TILE==='lc'?'p6-kpi-on':''}" onclick="p6SetTile('lc')" style="cursor:pointer" title="Click to see all less-collection outlets"><div class="kl">💸 Less Coll.</div><div class="kv" style="color:var(--amber)">${fmtN(a.lessCol)}</div></div>
+    <div class="p6-kpi"><div class="kl">🚩 Not Achieved</div><div class="kv" style="color:var(--red)">${fmtN(a.notAchieved)}</div></div>
+    <div class="p6-kpi"><div class="kl">⬆ Excess</div><div class="kv" style="color:var(--violet)">${fmtN(a.excess)}</div></div>
+    <div class="p6-kpi"><div class="kl">💸 Less Coll.</div><div class="kv" style="color:var(--amber)">${fmtN(a.lessCol)}</div></div>
   </div>`;
 
   /* drill-down table */
@@ -4639,42 +3615,6 @@ function renderP6Ops(){
   };
 
   let tableBody='';
-  const isFr = SESSION && SESSION.role==='franchisee';
-  // helper to draw a single route row + its expandable panels
-  const drawRoute=(fr,rt,rtRows,depth)=>{
-    const rtKey='R:'+fr+':'+rt; const rtSel=P6_SEL_ROUTE===rtKey;
-    const rtLabel=rt.replace(/_/g,' ').slice(0,35);
-    const ra=p6Agg(rtRows);
-    const pad=10+depth*20;
-    const achCls=ra.pct>=100?'pos':ra.pct>=70?'warn':'neg';
-    let h=`<tr class="p6-drill-row ${rtSel?'expanded':''}" onclick="p6SelRoute('${rtKey.replace(/'/g,"\\'")}')">
-      <td style="padding-left:${pad}px;color:var(--txt-dim)">
-        <span style="color:var(--aqua);font-size:11px;margin-right:6px">${rtSel?'▾':'▸'}</span>🛣 ${rtLabel}
-      </td>
-      <td class="tnum" style="text-align:right">${fmtN(ra.n)}</td>
-      <td class="tnum" style="text-align:right;color:var(--aqua)">${fmtN(ra.sc)}</td>
-      <td class="tnum" style="text-align:right;color:var(--marble)">${fmtN(ra.tc)}</td>
-      <td class="tnum" style="text-align:right;color:var(--green)">${fmtN(ra.pc)}</td>
-      <td class="tnum" style="text-align:right;color:var(--amber)">${fmtN(ra.tgt)}</td>
-      <td class="tnum" style="text-align:right;color:var(--green)">${fmtN(ra.ach)}</td>
-      <td class="tnum" style="text-align:right"><span class="chip ${achCls}" style="font-size:11px">${ra.pct}%</span></td>
-      <td class="tnum" style="text-align:right">${fmtN(ra.sale)}</td>
-      <td class="tnum" style="text-align:right">${fmtN(ra.coll)}</td>
-      <td class="tnum" style="text-align:right;color:var(--red)">${ra.notAchieved||'—'}</td>
-      <td class="tnum" style="text-align:right;color:var(--violet)">${ra.excess||'—'}</td>
-      <td class="tnum" style="text-align:right;color:var(--amber)">${ra.lessCol||'—'}</td>
-    </tr>`;
-    h+=routePanels(rtRows,rtKey);
-    return h;
-  };
-  if(isFr){
-    // franchisee: show their route rows directly, no India/State/Franchise wrapping
-    const myFr=SESSION.scopeVal;
-    const myRows=rows.filter(r=>p6Fr(r)===myFr);
-    const rts=[...new Set(myRows.map(r=>p6Route(r)).filter(Boolean))].sort();
-    rts.forEach(rt=>{ tableBody+=drawRoute(myFr,rt,myRows.filter(r=>p6Route(r)===rt),0); });
-    if(!rts.length)tableBody=`<tr><td colspan="13" style="text-align:center;color:var(--txt-mute);padding:24px">No routes found for your franchise.</td></tr>`;
-  } else {
   // India
   const indKey='India';
   const indOpen=P6_EXPAND.has(indKey);
@@ -4724,7 +3664,6 @@ function renderP6Ops(){
       }
     });
   }
-  } /* end non-franchisee drill */
 
   $('#mod-p6').innerHTML=`
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
@@ -4741,15 +3680,15 @@ function renderP6Ops(){
         <button class="modbtn ${P6_UNIT==='cases'?'active':''}" style="padding:6px 13px;font-size:12px" onclick="P6_UNIT='cases';renderP6()">Cases</button>
       </div>
       <span style="font-size:11px;color:var(--txt-mute);letter-spacing:.06em;text-transform:uppercase;font-weight:700">View</span>
-      ${(SESSION&&SESSION.role==='franchisee')?'':`<div class="modswitch" style="padding:3px">
+      <div class="modswitch" style="padding:3px">
         <button class="modbtn ${P6_MODE==='drill'?'active':''}" style="padding:6px 13px;font-size:12px" onclick="P6_MODE='drill';renderP6()">🌳 Drill-down</button>
         <button class="modbtn ${P6_MODE==='filter'?'active':''}" style="padding:6px 13px;font-size:12px" onclick="P6_MODE='filter';renderP6()">🔍 Filter</button>
-      </div>`}
+      </div>
     </div>
   </div>
   ${kpiBar(total,'India')}
-  ${P6_TILE ? p6TilePanel(rows,P6_TILE) : ((P6_MODE==='drill'||(SESSION&&SESSION.role==='franchisee')) ? `<div class="panel">
-    <div class="panel-h"><h3>${(SESSION&&SESSION.role==='franchisee')?SESSION.scopeVal+' → Route → Outlet':'India → State → Franchise → Route → Outlet'}</h3>
+  ${P6_MODE==='drill' ? `<div class="panel">
+    <div class="panel-h"><h3>India → State → Franchise → Route → Outlet</h3>
       <span class="hint">Click row to expand · click route to see 3 panels · 🚩 not achieved · ⬆ excess · 💸 less collection</span>
     </div>
     <div class="tbl-scroll" style="max-height:calc(100vh - 260px);overflow-y:auto">
@@ -4759,93 +3698,9 @@ function renderP6Ops(){
       </table>
     </div>
     <div class="note">📌 <b>SC</b>=Scheduled (has target) · <b>TC</b>=Total Calls (visited) · <b>PC</b>=Productive (order received). Click any route to see outlet-level detail panels: target gaps, excess stock, collection issues.</div>
-  </div>` : p6FilterPanels(rows))}`;
+  </div>` : p6FilterPanels(rows)}`;
 }
 
-
-/* KPI-tile drill: grouped-by-franchise/route, auto-expanded list of the matching outlets.
-   'na' = Target Not Achieved · 'ex' = Excess Achievement · 'lc' = Less Collection.
-   Respects the current filter/scope (rows already filtered). */
-function p6TilePanel(rows,tile){
-  const bpCls=bp=>'bp-'+bp.replace(/\s/g,'').replace(/-/g,'');
-  const cfg={
-    na:{test:r=>p6TargetTag(r)==='Target Not Achieved', label:'Target Not Achieved', icon:'🚩', col:'var(--red)'},
-    ex:{test:r=>['Excess Achieved','New volume'].includes(p6TargetTag(r)), label:'Excess Achievement', icon:'⬆', col:'var(--violet)'},
-    lc:{test:r=>p6CollTag(r)==='Less Collection', label:'Less Collection', icon:'💸', col:'var(--amber)'}
-  }[tile];
-  const hits=rows.filter(cfg.test);
-  const scopeNote=[
-    P6F.state!=='All'?P6F.state:null,
-    P6F.pos!=='All'?P6F.pos:null,
-    P6F.emp!=='All'?(empById(+P6F.emp)||{}).name:null,
-    P6F.fr!=='All'?P6F.fr:null
-  ].filter(Boolean).join(' · ')||'India (all)';
-
-  // group hits → franchise → route
-  const byFr={};
-  hits.forEach(r=>{
-    const fr=p6Fr(r)||'—', rt=p6Route(r)||'—';
-    byFr[fr]=byFr[fr]||{};
-    byFr[fr][rt]=byFr[fr][rt]||[];
-    byFr[fr][rt].push(r);
-  });
-  const frNames=Object.keys(byFr).sort();
-
-  // per-tile row renderer
-  const rowHtml=(r)=>{
-    if(tile==='lc'){
-      return `<tr class="p6-outlet-row">
-        <td style="color:var(--txt);padding:6px 10px">${p6Outlet(r)}</td>
-        <td class="tnum" style="text-align:right;color:var(--aqua)">${fmtN(p6Sale(r))}</td>
-        <td class="tnum" style="text-align:right;color:var(--green)">${fmtN(p6Collection(r))}</td>
-        <td class="tnum" style="text-align:right;color:var(--amber)">${fmtN(p6CashDiff(r))}</td></tr>`;
-    }
-    if(tile==='ex'){
-      return `<tr class="p6-outlet-row">
-        <td style="color:var(--txt);padding:6px 10px">${p6Outlet(r)}</td>
-        <td><span class="${bpCls(p6BP(r))}">${p6BP(r)}</span></td>
-        <td class="tnum" style="text-align:right;color:var(--amber)">${p6UnitFmt(p6UnitVal(p6Target(r),p6Glass(r),p6Pet(r)))}</td>
-        <td class="tnum" style="text-align:right;color:var(--green)">${p6UnitFmt(p6UnitVal(p6Achieved(r),p6Glass(r),p6Pet(r)))}</td>
-        <td class="tnum" style="text-align:right;color:var(--violet)">+${p6UnitFmt(p6UnitVal(p6Achieved(r)-p6Target(r),p6Glass(r),p6Pet(r)))}</td></tr>`;
-    }
-    // na
-    return `<tr class="p6-outlet-row">
-      <td style="color:var(--txt);padding:6px 10px">${p6Outlet(r)}</td>
-      <td style="text-align:center">${p6Visited(r)?'<span style="color:var(--green)">✓</span>':'<span style="color:var(--red)">✗</span>'}</td>
-      <td><span class="${bpCls(p6BP(r))}">${p6BP(r)}</span></td>
-      <td class="tnum" style="text-align:right;color:var(--amber)">${p6UnitFmt(p6UnitVal(p6Target(r),p6Glass(r),p6Pet(r)))}</td>
-      <td class="tnum" style="text-align:right;color:var(--red)">${p6UnitFmt(p6UnitVal(p6Achieved(r),p6Glass(r),p6Pet(r)))}</td></tr>`;
-  };
-  const thead = tile==='lc'
-    ? `<tr style="background:var(--panel)"><th style="padding:7px 10px;text-align:left">Outlet</th><th style="text-align:right">Invoice ₹</th><th style="text-align:right">Collected ₹</th><th style="text-align:right">Deficit ₹</th></tr>`
-    : tile==='ex'
-    ? `<tr style="background:var(--panel)"><th style="padding:7px 10px;text-align:left">Outlet</th><th>Beat Pulse</th><th style="text-align:right">Target</th><th style="text-align:right">Achieved</th><th style="text-align:right">Surplus</th></tr>`
-    : `<tr style="background:var(--panel)"><th style="padding:7px 10px;text-align:left">Outlet</th><th>Visited</th><th>Beat Pulse</th><th style="text-align:right">Target</th><th style="text-align:right">Achieved</th></tr>`;
-
-  const body = frNames.length ? frNames.map(fr=>{
-    const rts=Object.keys(byFr[fr]).sort();
-    const frCount=rts.reduce((s,rt)=>s+byFr[fr][rt].length,0);
-    const frBlocks=rts.map(rt=>{
-      const list=byFr[fr][rt];
-      return `<div style="margin:8px 0 4px 0">
-        <div style="font-size:11px;color:var(--txt-dim);font-weight:600;padding:4px 10px">🛣 ${rt.replace(/_/g,' ').slice(0,45)} <span class="chip mute" style="font-size:10px">${list.length}</span></div>
-        <table style="width:100%;font-size:12px;border-collapse:collapse">
-          <thead>${thead}</thead><tbody>${list.map(rowHtml).join('')}</tbody>
-        </table></div>`;
-    }).join('');
-    return `<div class="panel" style="margin-bottom:12px">
-      <div class="panel-h"><h3>🏪 ${fr.replace(/^[A-Z]+_DS_/,'')} <span class="chip" style="font-size:11px;background:${cfg.col};color:#04121b">${frCount}</span></h3></div>
-      <div style="padding:2px 4px 8px">${frBlocks}</div></div>`;
-  }).join('') : `<div class="panel"><div style="padding:26px;text-align:center;color:var(--green)">✓ No ${cfg.label.toLowerCase()} outlets in this scope.</div></div>`;
-
-  return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
-      <span style="font-family:'Archivo';font-weight:800;font-size:16px;color:${cfg.col}">${cfg.icon} ${cfg.label}</span>
-      <span class="chip" style="font-size:12px;background:${cfg.col};color:#04121b;font-weight:700">${hits.length} outlets</span>
-      <span class="chip mute" style="font-size:11px">${scopeNote}</span>
-      <button class="btn sm keepenabled" style="margin-left:auto" onclick="p6SetTile(null)">✕ Close</button>
-    </div>
-    ${body}`;
-}
 
 /* Filter-mode: flat 3 problem panels for the entire filtered scope */
 function p6FilterPanels(rows){
@@ -5309,6 +4164,184 @@ function renderPnlDrill(){
 function pnlInr(n){n=Math.round(n);const neg=n<0;return(neg?'-₹':'₹')+Math.abs(n).toLocaleString('en-IN');}
 
 
+/* ═══════════════════════════════════════════════════════════════════════
+   SUPABASE SYNC  (additive — does not modify any existing app logic)
+   • One shared company dataset, stored as key/value rows in table `app_state`.
+   • On load: fetch all rows, hydrate in-memory state, re-render.
+   • On any change: snapshot state and upsert (debounced). Persists across
+     refresh and is visible from any browser/device on the same account.
+   ═══════════════════════════════════════════════════════════════════════ */
+(function(){
+  const SUPABASE_URL = 'https://jmtrovnvsfypislnwfzz.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptdHJvdm52c2Z5cGlzbG53Znp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MDE2NjMsImV4cCI6MjA5ODQ3NzY2M30.ZViBSZbXZv8vxEifWwL2EPtHLyKXbMhQiLoBXxqscYk';
+  const TABLE = 'app_state';          // key/value store: columns (key text PK, value jsonb, updated_at timestamptz)
+  const SHARED_ID = 'company';        // namespace prefix so one project can host multiple deployments
+
+  if(!window.supabase || !window.supabase.createClient){
+    console.warn('[sync] Supabase client not loaded — running in local-only mode.');
+    window.__SB = null;
+    return;
+  }
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  window.__SB = sb;
+
+  /* ---- state registry -------------------------------------------------
+     Each entry: how to READ the live value and how to WRITE it back.
+     `const` objects/arrays are mutated in place (clear + copy) so existing
+     closures that captured the reference keep working. `let` bindings live
+     on window in non-module scripts, so we reassign through window.       */
+  function replaceObj(target, src){            // in-place replace for a plain object
+    Object.keys(target).forEach(k=>delete target[k]);
+    if(src && typeof src==='object') Object.assign(target, src);
+  }
+  function replaceArr(target, src){            // in-place replace for an array
+    target.length=0;
+    if(Array.isArray(src)) src.forEach(x=>target.push(x));
+  }
+
+  const REG = {
+    // ----- org / config (let bindings) -----
+    POSITIONS: { get:()=>POSITIONS,     set:v=>{ if(Array.isArray(v)) window.POSITIONS=v; } },
+    STATES:    { get:()=>STATES,        set:v=>{ if(Array.isArray(v)) window.STATES=v; } },
+    FRS:       { get:()=>FRS,           set:v=>{ if(Array.isArray(v)) window.FRS=v; } },
+    EMP:       { get:()=>EMP,           set:v=>{ if(Array.isArray(v)){ window.EMP=v; window.nextId=Math.max(0,...v.map(e=>e.id||0))+1; } } },
+    USERS:     { get:()=>USERS,         set:v=>{ if(Array.isArray(v)) window.USERS=v; } },
+    APP_MONTHS:{ get:()=>APP_MONTHS,    set:v=>{ if(Array.isArray(v)&&v.length) window.APP_MONTHS=v; } },
+    // ----- const objects/arrays (mutate in place) -----
+    BURNFR:      { get:()=>BURNFR,        set:v=>replaceArr(BURNFR, v) },
+    ROUTES:      { get:()=>ROUTES,        set:v=>replaceObj(ROUTES, v) },
+    ROUTEDATA:   { get:()=>ROUTEDATA,     set:v=>replaceObj(ROUTEDATA, v) },
+    EXP:         { get:()=>EXP,           set:v=>replaceObj(EXP, v) },
+    ECON:        { get:()=>ECON,          set:v=>replaceObj(ECON, v) },
+    FR_PNL:      { get:()=>FR_PNL,        set:v=>replaceObj(FR_PNL, v) },
+    BURN_BY_MONTH:{ get:()=>BURN_BY_MONTH,set:v=>replaceObj(BURN_BY_MONTH, v) },
+    REPEAT_OVR:  { get:()=>REPEAT_OVR,    set:v=>replaceObj(REPEAT_OVR, v) },
+    PJP_STORE:   { get:()=>PJP_STORE,     set:v=>replaceObj(PJP_STORE, v) },
+    PJP_EXTRA:   { get:()=>PJP_EXTRA,     set:v=>replaceObj(PJP_EXTRA, v) },
+    DATASYNC:    { get:()=>DATASYNC,      set:v=>replaceObj(DATASYNC, v) },
+    // ----- STATE_HOLIDAYS: Sets aren't JSON-native, convert to/from arrays -----
+    STATE_HOLIDAYS: {
+      get:()=>{ const o={}; Object.keys(STATE_HOLIDAYS).forEach(st=>{ o[st]={}; Object.keys(STATE_HOLIDAYS[st]).forEach(mo=>{ o[st][mo]=[...STATE_HOLIDAYS[st][mo]]; }); }); return o; },
+      set:v=>{ Object.keys(STATE_HOLIDAYS).forEach(k=>delete STATE_HOLIDAYS[k]); if(v&&typeof v==='object'){ Object.keys(v).forEach(st=>{ STATE_HOLIDAYS[st]={}; Object.keys(v[st]).forEach(mo=>{ STATE_HOLIDAYS[st][mo]=new Set(v[st][mo]||[]); }); }); } }
+    },
+  };
+  const KEYS = Object.keys(REG);
+
+  function snapshot(){
+    const out={};
+    KEYS.forEach(k=>{ try{ out[k]=REG[k].get(); }catch(e){ /* skip */ } });
+    return out;
+  }
+
+  /* re-run the app's own render entry points so hydrated data shows up,
+     without assuming which module/tab is active */
+  function repaint(){
+    try{ if(typeof buildFilterBar==='function') buildFilterBar(); }catch(e){}
+    try{ if(SESSION && typeof applyRole==='function') applyRole(); }catch(e){}
+    try{
+      const activeTab=document.querySelector('.tab.active');
+      if(activeTab && typeof render==='function'){ render(activeTab.dataset.v); }
+      const activeMod=document.querySelector('.modbtn.active');
+      if(activeMod && typeof switchModule==='function'){ switchModule(activeMod.dataset.m); }
+    }catch(e){}
+  }
+
+  let lastSaved='';           // JSON of last successful push, for change detection
+  let saveTimer=null;
+  let ready=false;            // don't save until initial load completes
+  let disabled=false;         // circuit breaker — trips when the environment can't do fetch
+  let heartbeat=null;
+
+  /* Some sandboxed environments (e.g. an iframe that proxies fetch over
+     postMessage) can't clone the Response/Headers objects the Supabase
+     client uses, and throw DataCloneError on every call. Rather than spam
+     the console and retry forever, trip a breaker on the first such failure
+     (or a couple of consecutive network errors) and fall back to local-only.
+     In a normal browser tab / hosted deploy this never fires. */
+  function tripBreaker(reason){
+    if(disabled) return;
+    disabled=true;
+    clearTimeout(saveTimer);
+    if(heartbeat) clearInterval(heartbeat);
+    console.warn('[sync] disabled — running local-only. Reason: '+reason+
+      '\n[sync] This is expected inside the in-app preview sandbox; open the file in a real browser tab or host it and sync will work.');
+  }
+  function isFatalEnvError(e){
+    const m = (e && (e.message||e.name||''))+'';
+    return m.indexOf('DataClone')>-1 || m.indexOf('could not be cloned')>-1 || m.indexOf('postMessage')>-1;
+  }
+
+  async function loadAll(){
+    if(disabled) return;
+    try{
+      const { data, error } = await sb.from(TABLE).select('key,value').like('key', SHARED_ID+':%');
+      if(error){ console.warn('[sync] load error:', error.message); ready=true; return; }
+      if(data && data.length){
+        const map={};
+        data.forEach(row=>{ map[row.key.slice(SHARED_ID.length+1)] = row.value; });
+        KEYS.forEach(k=>{ if(k in map){ try{ REG[k].set(map[k]); }catch(e){ console.warn('[sync] hydrate '+k, e); } } });
+        lastSaved = JSON.stringify(snapshot());
+        repaint();
+        console.log('[sync] loaded '+data.length+' datasets from Supabase');
+      }else{
+        console.log('[sync] no saved data; seeding table from current state');
+        lastSaved='';
+        await saveAll(true);
+      }
+    }catch(e){
+      if(isFatalEnvError(e)){ tripBreaker(e.message||e.name); }
+      else{ console.warn('[sync] load failed:', e); }
+    }finally{
+      ready=true;
+    }
+  }
+
+  let failCount=0;
+  async function saveAll(force){
+    if(disabled) return;
+    if(!ready && !force) return;
+    const snap = snapshot();
+    const json = JSON.stringify(snap);
+    if(!force && json===lastSaved) return;        // nothing changed
+    const stamp = new Date().toISOString();
+    const rows = KEYS.map(k=>({ key: SHARED_ID+':'+k, value: snap[k], updated_at: stamp }));
+    try{
+      const { error } = await sb.from(TABLE).upsert(rows, { onConflict:'key' });
+      if(error){ console.warn('[sync] save error:', error.message); return; }
+      lastSaved = json;                            // only mark saved on success
+      failCount=0;
+    }catch(e){
+      if(isFatalEnvError(e)){ tripBreaker(e.message||e.name); return; }
+      if(++failCount>=3){ tripBreaker('repeated network failures'); return; }
+      console.warn('[sync] save failed:', e);
+    }
+  }
+  function scheduleSave(){
+    if(disabled || !ready) return;
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(()=>saveAll(false), 800);   // debounce bursts of edits
+  }
+
+  // Autosave triggers: any user interaction that could mutate state, plus a
+  // periodic safety flush and a flush when the tab is hidden/closed.
+  ['click','change','keyup','input'].forEach(ev=>
+    document.addEventListener(ev, scheduleSave, true)
+  );
+  heartbeat=setInterval(()=>saveAll(false), 15000);
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveAll(false); });
+  window.addEventListener('beforeunload', ()=>{ try{ saveAll(false); }catch(e){} });
+
+  // expose manual hooks (handy for debugging / forcing a sync)
+  window.SBSync = { save:()=>saveAll(true), load:loadAll, snapshot, status:()=>({disabled, ready}) };
+
+  // kick off initial load once the DOM + app boot have run
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', loadAll);
+  }else{
+    loadAll();
+  }
+})();
+
 /* BOOT */
 buildFilterBar();
 renderAccess();
@@ -5321,8 +4354,6 @@ renderAccess();
     $('#loginScreen').style.display='flex';
   }
 })();
-/* hydrate saved cloud data on every load so entries survive reload & are shared */
-try{ sbLoad(); }catch(e){}
 </script>
 </body>
 </html>
