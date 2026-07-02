@@ -1726,6 +1726,21 @@ function frGuarResolved(fr,month){
   return 0;
 }
 
+/* SINGLE SOURCE OF TRUTH for "bottles needed to close burn" — used by both the
+   Bottle Calculator and PJP Planning so their target always matches.
+   Mirrors the Bottle Calculator: rupee target = (company burn ×2 + fixed),
+   split by glass% into glass/PET rupees, each ÷ its own margin → bottles. */
+function bottlesNeeded(fr,month){
+  const ec=getEcon(month)[fr]||{ratio:70,margin:10.5,mGlass:10.5,mPet:10.5};
+  const companyBurn=Math.abs(Math.min(0,burnOf(fr)));
+  const fixed=frFixedResolved(fr,month);
+  const target=companyBurn*2 + fixed;                 // ₹ to close burn
+  const gShareRs=target*(ec.ratio/100), pShareRs=target*(1-ec.ratio/100);
+  const glass=ec.mGlass>0?Math.round(gShareRs/ec.mGlass):0;
+  const pet=ec.mPet>0?Math.round(pShareRs/ec.mPet):0;
+  return glass+pet;
+}
+
 function bottleScopeFr(){
   // which franchises pass current calc filters
   let efr=null,pfr=null;
@@ -2102,9 +2117,7 @@ function frHasBde(fr){
 }
 function pjpTgtBtl(fr){
   const bfr=BURNFR.find(f=>f.name===fr);if(!bfr)return 0;
-  const ec=getEcon(pjpMonth)[fr];const mg=ec?ec.margin:10.5;
-  const targetRs=shareTargetRs(fr,pjpMonth);   /* cumulative share target ₹ */
-  return mg>0?Math.round(targetRs/mg):0;
+  return bottlesNeeded(fr,pjpMonth);   /* identical to Bottle Calculator */
 }
 
 const PJP_STORE={};
