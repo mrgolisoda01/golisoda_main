@@ -1321,7 +1321,15 @@ function setEcon(fr,k,v){const e=getEcon(CF.month||curMonth);if(!e[fr]){const s=
 
 function syncActive(){const e=getExp(curMonth);STATES.forEach(st=>{if(!e.states[st])e.states[st]={salary:0,travel:0,active:0};e.states[st].active=activeFrCount(st);});e.shared.active=FRS.filter(f=>f.status==='Active').length;renderExpense();toast('Active counts synced from Franchise master','ok');}
 
-function saveAll(){toast('Masters saved (in-session). Wire to Sheet/Supabase to persist.','ok');}
+function saveAll(){
+  // Persist to Supabase (SBSync is installed by the sync module below).
+  if(window.SBSync && typeof window.SBSync.save==='function'){
+    window.SBSync.save();
+    toast('Masters saved to Supabase.','ok');
+  } else {
+    toast('Masters saved (in-session). Supabase not connected.','ok');
+  }
+}
 
 
 
