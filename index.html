@@ -2078,9 +2078,9 @@ function pjpBpcFn(fr){const ec=getEcon(pjpMonth)[fr]||{ratio:100};return(ec.rati
 /* route reference: buying/non-buying outlet counts + potential in bottles */
 function pjpRouteObj(fr,routeName){return (ROUTEDATA.routes||[]).find(r=>r.fr===fr&&r.route===routeName)||null;}
 function pjpRouteRef(fr,routeName){
-  const r=pjpRouteObj(fr,routeName);const bpc=pjpBpcFn(fr);
+  const r=pjpRouteObj(fr,routeName);
   if(!r)return {buyCt:0,buyPot:0,nbCt:0,nbPot:0};
-  return {buyCt:r.buy||0,buyPot:Math.round((r.buyPot||0)*bpc),nbCt:r.nonbuy||0,nbPot:Math.round((r.nonbuyPot||0)*bpc)};
+  return {buyCt:r.buy||0,buyPot:Math.round(r.buyPot||0),nbCt:r.nonbuy||0,nbPot:Math.round(r.nonbuyPot||0)};
 }
 /* non-buying outlets still left to convert on a route this month (route NB pool minus already-planned NB, excluding the day being edited) */
 function pjpNbLeft(fr,data,routeName,exceptIdx){
@@ -2995,7 +2995,6 @@ function renderPjpBde(){
   const data=getPjp(fr,pjpMonth);
   const routes=pjpRoutes(fr);
   const tgtBtl=pjpTgtBtl(fr);
-  const bpc=pjpBpcFn(fr);
   const bfr=BURNFR.find(f=>f.name===fr);
   const isEditable=data.status==='DRAFT';
   const _ignore_=0;// can THIS session edit this franchise's PJP? admin always; BDE/BDM/SH if in scope; NSM/Finance/Franchisee no edit
@@ -3153,7 +3152,7 @@ function renderPjpBde(){
 function pjpPickDay(day){pjpSelDay=(pjpSelDay===day)?null:day;renderPjpBde();}
 function pjpDayRoute(i,rv){
   const data=getPjp(pjpBdeView,pjpMonth);data.days[i].route=rv;
-  if(rv){const r=pjpRoutes(pjpBdeView).find(x=>x.route===rv);const pot=r?Math.round(r.buyPot*pjpBpcFn(pjpBdeView)):0;data.days[i].buyPot=pot;if(!data.days[i].buyTarget)data.days[i].buyTarget=pot;}
+  if(rv){const r=pjpRoutes(pjpBdeView).find(x=>x.route===rv);const pot=r?Math.round(r.buyPot):0;data.days[i].buyPot=pot;if(!data.days[i].buyTarget)data.days[i].buyTarget=pot;}
   else {data.days[i].buyPot=0;data.days[i].buyTarget=0;}
   renderPjpBde();
 }
