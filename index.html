@@ -4174,8 +4174,8 @@ function pnlInr(n){n=Math.round(n);const neg=n<0;return(neg?'-₹':'₹')+Math.a
 (function(){
   const SUPABASE_URL = 'https://jmtrovnvsfypislnwfzz.supabase.co';
   const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptdHJvdm52c2Z5cGlzbG53Znp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MDE2NjMsImV4cCI6MjA5ODQ3NzY2M30.ZViBSZbXZv8vxEifWwL2EPtHLyKXbMhQiLoBXxqscYk';
-  const TABLE = 'app_state';          // key/value store: columns (key text PK, value jsonb, updated_at timestamptz)
-  const SHARED_ID = 'company';        // namespace prefix so one project can host multiple deployments
+  const TABLE = 'app_state';          // your schema: columns (id text PK, data jsonb, updated_at timestamptz)
+                                      // one row per dataset — id = dataset name (EMP, FRS, PJP_STORE, ...)
 
   if(!window.supabase || !window.supabase.createClient){
     console.warn('[sync] Supabase client not loaded — running in local-only mode.');
@@ -4274,11 +4274,11 @@ function pnlInr(n){n=Math.round(n);const neg=n<0;return(neg?'-₹':'₹')+Math.a
   async function loadAll(){
     if(disabled) return;
     try{
-      const { data, error } = await sb.from(TABLE).select('key,value').like('key', SHARED_ID+':%');
+      const { data, error } = await sb.from(TABLE).select('id,data').in('id', KEYS);
       if(error){ console.warn('[sync] load error:', error.message); ready=true; return; }
       if(data && data.length){
         const map={};
-        data.forEach(row=>{ map[row.key.slice(SHARED_ID.length+1)] = row.value; });
+        data.forEach(row=>{ map[row.id] = row.data; });
         KEYS.forEach(k=>{ if(k in map){ try{ REG[k].set(map[k]); }catch(e){ console.warn('[sync] hydrate '+k, e); } } });
         lastSaved = JSON.stringify(snapshot());
         repaint();
@@ -4304,9 +4304,9 @@ function pnlInr(n){n=Math.round(n);const neg=n<0;return(neg?'-₹':'₹')+Math.a
     const json = JSON.stringify(snap);
     if(!force && json===lastSaved) return;        // nothing changed
     const stamp = new Date().toISOString();
-    const rows = KEYS.map(k=>({ key: SHARED_ID+':'+k, value: snap[k], updated_at: stamp }));
+    const rows = KEYS.map(k=>({ id: k, data: snap[k], updated_at: stamp }));
     try{
-      const { error } = await sb.from(TABLE).upsert(rows, { onConflict:'key' });
+      const { error } = await sb.from(TABLE).upsert(rows, { onConflict:'id' });
       if(error){ console.warn('[sync] save error:', error.message); return; }
       lastSaved = json;                            // only mark saved on success
       failCount=0;
