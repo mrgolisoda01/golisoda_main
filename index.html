@@ -1822,7 +1822,7 @@ function repeatsOf(r){return REPEAT_OVR[r.route]!==undefined?REPEAT_OVR[r.route]
 function setRepeat(route,v){REPEAT_OVR[route]=Math.max(0,+v||0);renderRoute();}
 function setBPC(which,v){if(which==='g')GLASS_PC=+v||0;else PET_PC=+v||0;renderRoute();}
 function rpAgg(rows){let a={outlets:0,buy:0,nonbuy:0,buyP:0,nonbuyP:0,buyB:0,nonbuyB:0};
-  rows.forEach(r=>{const rep=repeatsOf(r);a.outlets+=r.outlets;a.buy+=r.buy;a.nonbuy+=r.nonbuy;a.buyP+=r.buyPot*rep;a.nonbuyP+=r.nonbuyPot*rep;a.buyB+=r.buyPot*rep*4;a.nonbuyB+=r.nonbuyPot*rep*4;});return a;}
+  rows.forEach(r=>{const rep=repeatsOf(r);a.outlets+=r.outlets;a.buy+=r.buy;a.nonbuy+=r.nonbuy;a.buyP+=r.buyPot*rep;a.nonbuyP+=r.nonbuyPot*rep;a.buyB+=r.buyPot*rep;a.nonbuyB+=r.nonbuyPot*rep;});return a;}
 function rpToggle(key){RPEXP.has(key)?RPEXP.delete(key):RPEXP.add(key);renderRoute();}
 
 /* franchise target analysis: target bottles vs potential bottles */
@@ -1908,7 +1908,7 @@ function frTarget(fr){
   const bpc=(ec.ratio/100)*GLASS_PC+(1-ec.ratio/100)*PET_PC;   // blended bottles/case
   const targetCases=bpc>0?Math.round(target/bpc):0;
   const rows=RP.filter(r=>r.fr===fr);const a=rpAgg(rows);
-  const buyBtl=Math.round(a.buyP*bpc), nonbuyBtl=Math.round(a.nonbuyP*bpc);
+  const buyBtl=Math.round(a.buyP), nonbuyBtl=Math.round(a.nonbuyP);
   const shortage=Math.max(0,target-buyBtl);
   const afterNon=buyBtl+nonbuyBtl;
   let verdict,vcls;
