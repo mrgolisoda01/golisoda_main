@@ -3417,7 +3417,7 @@ function p6BP(r){
   return bp||'—';
 }
 function p6Activity(r){ return (G(r,'Activity Status')||'').toString().trim(); }
-function p6Visited(r){ return p6Activity(r).toLowerCase().includes('visited'); }
+function p6Visited(r){ const a=p6Activity(r).toLowerCase(); return a.includes('visited') && !a.includes('not visited'); }
 function p6Productive(r){ return p6Activity(r)==='Visited - Order Received'; }
 function p6HasTarget(r){ return p6Target(r)>0; }
 function p6VisitDur(r){ return G(r,'Visited Duration')||'—'; }
@@ -3481,7 +3481,7 @@ function p6Filter(rows){
 }
 /* ── aggregation ── */
 function p6Agg(rows){
-  const sc=rows.filter(p6HasTarget).length;
+  const sc=rows.length;
   const tc=rows.filter(p6Visited).length;
   const pc=rows.filter(p6Productive).length;
   let tgt=0,ach=0,sale=0,coll=0,cashDiff=0,glass=0,pet=0;
@@ -3819,7 +3819,7 @@ function renderP6Ops(){
         <tbody>${tableBody}</tbody>
       </table>
     </div>
-    <div class="note">📌 <b>SC</b>=Scheduled (has target) · <b>TC</b>=Total Calls (visited) · <b>PC</b>=Productive (order received). Click any route to see outlet-level detail panels: target gaps, excess stock, collection issues.</div>
+    <div class="note">📌 <b>SC</b>=Total outlets in route · <b>TC</b>=Visited outlets · <b>PC</b>=Productive (order received). Click any route to see outlet-level detail panels: target gaps, excess stock, collection issues.</div>
   </div>` : p6FilterPanels(rows)}`;
 }
 
