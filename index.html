@@ -3383,7 +3383,7 @@ let P6_DATA = [];  /* populated from Data Sync each render */
 let P6_TAB = 'ops';       // 'ops' | 'rankings'
 let P6_MODE = 'drill';    // 'drill' | 'filter'
 let P6_UNIT = 'bottles';  // 'bottles' | 'cases'
-function p6UnitVal(bottles,glass,pet){ return P6_UNIT==='cases'?p6Cases(glass,pet):bottles; }
+function p6UnitVal(cases,glass,pet){ return P6_UNIT==='cases'?cases:cases*24; }
 function p6UnitFmt(v){ return P6_UNIT==='cases'?(Math.round(v*10)/10).toLocaleString('en-IN'):fmtN(Math.round(v)); }
 let P6_RANK_BY = 'amount';// 'amount' | 'pct'
 let P6_RANK_LVL = 'franchise'; // franchise|bde|bdm|state
@@ -3560,8 +3560,8 @@ function outletAvgActual(r,unit){
   const m=outletAvgMap()[outletKey(r)];
   if(!m||m.days.size===0)return 0;
   const n=m.days.size;
-  if(unit==='cases')return p6Cases(m.sumG/n, m.sumP/n);
-  return m.sumB/n;
+  const avgCases=m.sumB/n;            // stored average is in the raw (case) unit
+  return unit==='cases'?avgCases:avgCases*24;
 }
 
 /* ── main render ── */
@@ -3639,8 +3639,8 @@ function renderP6Ops(){
     <div class="p6-kpi"><div class="kl">TC</div><div class="kv" style="color:var(--marble)">${fmtN(a.tc)}</div></div>
     <div class="p6-kpi"><div class="kl">PC</div><div class="kv" style="color:var(--green)">${fmtN(a.pc)}</div></div>
     <div class="p6-kpi-sep"></div>
-    <div class="p6-kpi"><div class="kl">Target${P6_UNIT==='cases'?' (cs)':''}</div><div class="kv" style="color:var(--amber)">${p6UnitFmt(p6UnitVal(a.tgt,a.glass,a.pet))}</div></div>
-    <div class="p6-kpi"><div class="kl">Achieved${P6_UNIT==='cases'?' (cs)':''}</div><div class="kv" style="color:var(--green)">${p6UnitFmt(p6UnitVal(a.ach,a.glass,a.pet))}</div></div>
+    <div class="p6-kpi"><div class="kl">Target${P6_UNIT==='cases'?' (cs)':' (btl)'}</div><div class="kv" style="color:var(--amber)">${p6UnitFmt(p6UnitVal(a.tgt,a.glass,a.pet))}</div></div>
+    <div class="p6-kpi"><div class="kl">Achieved${P6_UNIT==='cases'?' (cs)':' (btl)'}</div><div class="kv" style="color:var(--green)">${p6UnitFmt(p6UnitVal(a.ach,a.glass,a.pet))}</div></div>
     <div class="p6-kpi"><div class="kl">Diff</div><div class="kv ${a.diff>=0?'pos':'neg'}">${a.diff>=0?'+':'-'}${p6UnitFmt(p6UnitVal(Math.abs(a.diff),a.glass,a.pet))}</div></div>
     <div class="p6-kpi"><div class="kl">Achvmt %</div><div class="kv ${a.pct>=100?'pos':a.pct>=70?'warn':'neg'}">${a.pct}%</div></div>
     <div class="p6-kpi-sep"></div>
@@ -3657,7 +3657,7 @@ function renderP6Ops(){
   const hdr=`<tr style="background:var(--panel)">
     <th>Level</th><th style="text-align:right">Outlets</th>
     <th style="text-align:right">SC</th><th style="text-align:right">TC</th><th style="text-align:right">PC</th>
-    <th style="text-align:right">Target${P6_UNIT==='cases'?' (cs)':''}</th><th style="text-align:right">Achieved${P6_UNIT==='cases'?' (cs)':''}</th>
+    <th style="text-align:right">Target${P6_UNIT==='cases'?' (cs)':' (btl)'}</th><th style="text-align:right">Achieved${P6_UNIT==='cases'?' (cs)':' (btl)'}</th>
     <th style="text-align:right">Achvmt %</th>
     <th style="text-align:right">Sale ₹</th><th style="text-align:right">Collected ₹</th>
     <th style="text-align:right">🚩</th><th style="text-align:right">⬆</th><th style="text-align:right">💸</th>
