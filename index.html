@@ -3455,6 +3455,18 @@ function p6MatchFr(yoloFr, masterSet){
   for(const m of masterSet){ if(yf.includes(m.toUpperCase()))return true; }
   return false;
 }
+/* Build a LOCAL Date from a date-input value (ISO "YYYY-MM-DD") or a "DD-MM-YYYY"
+   string, matching how row dates are parsed, so range filtering is timezone-safe. */
+function p6BoundaryDate(v,endOfDay){
+  if(!v)return null;
+  const s=v.toString().trim(); const p=s.split('-'); let y,m,day;
+  if(p.length===3&&p[0].length===4){ y=+p[0]; m=+p[1]; day=+p[2]; }        // ISO YYYY-MM-DD
+  else if(p.length===3){ day=+p[0]; m=+p[1]; y=+p[2]; }                    // DD-MM-YYYY
+  else { const d=new Date(s); return isNaN(d)?null:d; }
+  const d=new Date(y,m-1,day);
+  if(endOfDay)d.setHours(23,59,59,999);
+  return isNaN(d)?null:d;
+}
 function p6Filter(rows){
   const empSet=p6EmpFranchiseSet();
   return rows.filter(r=>{
@@ -3462,8 +3474,8 @@ function p6Filter(rows){
     if(P6F.state!=='All'&&p6State(r)!==P6F.state)return false;
     if(P6F.fr!=='All'&&!(p6Fr(r)||'').toUpperCase().includes(P6F.fr.toUpperCase()))return false;
     if(empSet&&!p6MatchFr(p6Fr(r),empSet))return false;
-    if(P6F.from){const d=p6ParseDate(p6Date(r));if(!d||d<new Date(P6F.from))return false;}
-    if(P6F.to){const d=p6ParseDate(p6Date(r));if(d){const t=new Date(P6F.to);t.setHours(23,59,59);if(d>t)return false;}}
+    if(P6F.from){const d=p6ParseDate(p6Date(r));const lo=p6BoundaryDate(P6F.from,false);if(!d||!lo||d<lo)return false;}
+    if(P6F.to){const d=p6ParseDate(p6Date(r));const hi=p6BoundaryDate(P6F.to,true);if(d&&hi&&d>hi)return false;}
     return true;
   });
 }
