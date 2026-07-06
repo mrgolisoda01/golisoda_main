@@ -515,7 +515,14 @@ function sessionFranchises(){
   if(r.scope==='all')return BURNFR.map(f=>f.name);
   if(r.scope==='state')return BURNFR.filter(f=>f.state===sv).map(f=>f.name);
   if(r.scope==='bdm')return BURNFR.filter(f=>f.bdm===sv).map(f=>f.name);
-  if(r.scope==='fr')return BURNFR.filter(f=>f.name===sv).map(f=>f.name);
+  if(r.scope==='fr'){
+    /* exact match against BURNFR first */
+    let out=BURNFR.filter(f=>f.name===sv).map(f=>f.name);
+    /* resilient fallback: scopeVal is a franchise name — trust it directly even
+       if a stale/partial Supabase load left BURNFR without this row. */
+    if(!out.length && sv) out=[sv];
+    return out;
+  }
   return [];
 }
 function sessionStates(){
@@ -552,6 +559,9 @@ function applyRole(){
     let show=allowed==='all'||allowed.includes(m);
     if(m==='masters'&&SESSION.role!=='admin')show=false;       // only admin sees Masters
     if(m==='finance'&&!['admin','finance','nsm'].includes(SESSION.role))show=false;
+    // management-only reporting surfaces — hidden from BDE/BDE-level & franchisee
+    if(m==='empreport'&&!['admin','nsm','finance','statehead','bdm'].includes(SESSION.role))show=false;
+    if(m==='reports'&&!['admin','nsm','finance','statehead','bdm'].includes(SESSION.role))show=false;
     b.style.display=show?'':'none';
   });
   // role badge
@@ -1831,13 +1841,18 @@ let ROUTE_UNIT='cases';                 // 'cases' | 'bottles'
 let ROUTE_MODE='drill';   // 'drill' | 'filter'
 const RPF={state:'All', fr:'All'};
 function setRouteUnit(u){ROUTE_UNIT=u;renderRoute();}
+function rpUnit(bottles,fr){ if(ROUTE_UNIT==='bottles') return Math.round(bottles); const bpc=bpcOf(fr)||1; return Math.round(bottles/bpc); }
 function bpcOf(fr){const ec=(getEcon(ROUTEDATA.month)[fr])||{ratio:100};return (ec.ratio/100)*GLASS_PC+(1-ec.ratio/100)*PET_PC;}
 const REPEAT_OVR={};                    // editable route repeat overrides
 function repeatsOf(r){return REPEAT_OVR[r.route]!==undefined?REPEAT_OVR[r.route]:r.repeats;}
 function setRepeat(route,v){REPEAT_OVR[route]=Math.max(0,+v||0);renderRoute();}
 function setBPC(which,v){if(which==='g')GLASS_PC=+v||0;else PET_PC=+v||0;renderRoute();}
 function rpAgg(rows){let a={outlets:0,buy:0,nonbuy:0,buyP:0,nonbuyP:0,buyB:0,nonbuyB:0};
-  rows.forEach(r=>{const rep=repeatsOf(r);a.outlets+=r.outlets;a.buy+=r.buy;a.nonbuy+=r.nonbuy;a.buyP+=r.buyPot*rep;a.nonbuyP+=r.nonbuyPot*rep;a.buyB+=r.buyPot*rep;a.nonbuyB+=r.nonbuyPot*rep;});return a;}
+  rows.forEach(r=>{const rep=repeatsOf(r);const bpc=bpcOf(r.fr)||1;
+    a.outlets+=r.outlets;a.buy+=r.buy;a.nonbuy+=r.nonbuy;
+    a.buyB+=r.buyPot*rep;a.nonbuyB+=r.nonbuyPot*rep;            /* bottles */
+    a.buyP+=(r.buyPot*rep)/bpc;a.nonbuyP+=(r.nonbuyPot*rep)/bpc; /* cases = bottles / bottles-per-case */});
+  a.buyP=Math.round(a.buyP);a.nonbuyP=Math.round(a.nonbuyP);return a;}
 function rpToggle(key){RPEXP.has(key)?RPEXP.delete(key):RPEXP.add(key);renderRoute();}
 
 /* franchise target analysis: target bottles vs potential bottles */
@@ -2067,8 +2082,8 @@ function routeRow(r,depth){
     <td style="text-align:right" class="tnum">${fmtN(r.outlets)}</td>
     <td style="text-align:right" class="tnum">${fmtN(r.buy)}</td>
     <td style="text-align:right" class="tnum">${fmtN(r.nonbuy)}</td>
-    <td style="text-align:right" class="tnum" style="color:var(--green)">${fmtN(r.buyPot*rep)}</td>
-    <td style="text-align:right" class="tnum" style="color:var(--violet)">${fmtN(r.nonbuyPot*rep)}</td>
+    <td style="text-align:right" class="tnum" style="color:var(--green)">${fmtN(rpUnit(r.buyPot*rep,r.fr))}</td>
+    <td style="text-align:right" class="tnum" style="color:var(--violet)">${fmtN(rpUnit(r.nonbuyPot*rep,r.fr))}</td>
     <td></td><td></td></tr>`;
 }
 
@@ -2088,7 +2103,23 @@ let pjpFr=BURNFR[0]?.name||'', pjpMonth=TODAY_MONTH, pjpSelDay=null, pjpBdeView=
 /* ── helpers ── */
 function getDim(mo){const[y,m]=mo.split('-').map(Number);return new Date(y,m,0).getDate();}
 function pjpInr(n){n=Math.round(n);const neg=n<0;return(neg?'-₹':'₹')+Math.abs(n).toLocaleString('en-IN');}
-function pjpRoutes(fr){return(ROUTEDATA.routes||[]).filter(r=>r.fr===fr);}
+function pjpRoutes(fr){
+  let rows=(ROUTEDATA.routes||[]).filter(r=>r.fr===fr);
+  if(!rows.length){ ensureRoutesFor(fr); rows=(ROUTEDATA.routes||[]).filter(r=>r.fr===fr); }
+  return rows;
+}
+/* Re-hydrate a franchise's routes from the built-in REAL_ROUTES seed if missing.
+   Guards against a stale/empty ROUTEDATA arriving from Supabase. Real (non-N/A,
+   non-DUMP) routes only, matching the original boot seed shape. */
+function ensureRoutesFor(fr){
+  try{
+    if(!Array.isArray(ROUTEDATA.routes)) ROUTEDATA.routes=[];
+    if(ROUTEDATA.routes.some(r=>r.fr===fr)) return;
+    if(typeof REAL_ROUTES==='undefined') return;
+    const seed=REAL_ROUTES.filter(r=>r.fr===fr);
+    seed.forEach(r=>ROUTEDATA.routes.push({route:r.rt,fr:r.fr,state:r.s,bdm:r.bdm,outlets:r.o,buy:r.b,nonbuy:r.nb,buyPot:r.bp,nonbuyPot:r.np,repeats:4}));
+  }catch(e){/* non-fatal */}
+}
 function pjpBpcFn(fr){const ec=getEcon(pjpMonth)[fr]||{ratio:100};return(ec.ratio/100)*24+(1-ec.ratio/100)*30;}
 /* route reference: buying/non-buying outlet counts + potential in bottles */
 function pjpRouteObj(fr,routeName){return (ROUTEDATA.routes||[]).find(r=>r.fr===fr&&r.route===routeName)||null;}
@@ -2164,9 +2195,11 @@ function renderPjp(){
   buildPjpFilters();
   pjpMonth=PJP_F.month;
   // single-franchise roles (BDE/Franchisee) jump straight to their calendar
-  if(SESSION&&curRole().scope==='fr'&&!pjpBdeView){
+  if(SESSION&&curRole().scope==='fr'){
     const myFr=sessionFranchises()[0];
-    if(myFr){pjpBdeView=myFr;pjpFr=myFr;}
+    if(myFr && pjpBdeView!==myFr){pjpBdeView=myFr;pjpFr=myFr;}
+    /* one franchise only → the admin filter bar is irrelevant, hide it */
+    const fb=document.getElementById('pjpFilterBar'); if(fb) fb.style.display='none';
   }
   if(pjpBdeView){renderPjpBde();return;}
   if(PJP_VIEW==='employee'){renderPjpEmp();return;}
@@ -3142,7 +3175,7 @@ function renderPjpBde(){
     <span class="chip mute" style="font-size:11px">👤 ${bfr&&bfr.bde&&bfr.bde!=='-'?bfr.bde:'BDE —'}${bfr&&bfr.bdm&&bfr.bdm!=='-'?' · rolls up to '+bfr.bdm:''}</span>
     <span class="chip ${stCls}" style="font-size:11px">${stLbl}</span>
     <div class="pjp-verdict ${verdCls}" style="margin:0;font-size:12px">${verdTxt} <span style="opacity:.7">(${pct}%)</span></div>
-    ${pjpCanEdit?`<button class="btn primary edit-allow keepenabled" style="margin-left:auto" onclick="pjpSubmit()">Submit PJP to BDM →</button>`:''}
+    ${pjpCanEdit?`<button class="btn primary edit-allow keepenabled" style="margin-left:auto" onclick="pjpSubmit()">${pjpSubmitLabel(pjpBdeView)}</button>`:''}
   </div>
   <div class="kpis" style="margin-bottom:16px">
     <div class="kpi" style="--accent:var(--red)"><div class="kl">Target</div><div class="kv" style="color:var(--red);font-size:20px">${fmtN(tgtBtl)} btl</div><div class="kl" style="margin-top:4px;text-transform:none;letter-spacing:0;color:var(--txt-mute)">${pjpInr(bfr?bfr.burn:0)} burn</div></div>
@@ -3174,24 +3207,33 @@ function pjpDayVal(i,key,val){
   data.days[i][key]=(key==='remark')?val:Math.max(0,+val||0);
   if(key!=='remark')renderPjpBde();
 }
+/* Where does a submitted plan land next, given who is submitting?
+   Returns {status, toast, label}. The submitter's own approval step is skipped:
+   a BDM's plan doesn't wait for a BDM, a State Head's doesn't wait for BDM/SH.  */
+function pjpSubmitTarget(fr){
+  const role=SESSION?SESSION.role:'admin';
+  const hasBdm=frHasBdm(fr), hasBde=frHasBde(fr);
+  /* State Head (or franchise with neither BDM nor BDE) → straight to NSM */
+  if(role==='statehead' || (!hasBde && !hasBdm)){
+    return {status:'SH_APPROVED', toast:'PJP submitted to NSM ✓', label:'Submit PJP to NSM →'};
+  }
+  /* BDM submitting their own plan, or a franchise that has no BDM above → State Head */
+  if(role==='bdm' || !hasBdm){
+    return {status:'BDM_APPROVED', toast:'PJP submitted to State Head ✓', label:'Submit PJP to State Head →'};
+  }
+  /* default: BDE (or admin acting for a BDE) → BDM */
+  return {status:'SUBMITTED', toast:'PJP submitted to BDM ✓', label:'Submit PJP to BDM →'};
+}
+function pjpSubmitLabel(fr){ return pjpSubmitTarget(fr).label; }
 function pjpSubmit(){
   const data=getPjp(pjpBdeView,pjpMonth);
   if(data.status!=='DRAFT'){toast('Already submitted','');return;}
   const tgt=pjpTgtBtl(pjpBdeView);
   let plan=0;data.days.forEach(d=>{plan+=Number(d.buyPot)||0;plan+=Number(d.nbPot)||0;});
   if(plan<tgt*0.5&&!confirm(`Covers only ${Math.round(plan/Math.max(1,tgt)*100)}% of target. Submit anyway?`))return;
-  if(!frHasBde(pjpBdeView)&&!frHasBdm(pjpBdeView)){
-    data.status='SH_APPROVED';data.approvals={};
-    pjpSelDay=null;renderPjp();toast('State Head plan — submitted to NSM ✓','ok');
-    return;
-  }
-  if(!frHasBdm(pjpBdeView)){
-    data.status='BDM_APPROVED';data.approvals={};
-    pjpSelDay=null;renderPjp();toast('No BDM — PJP submitted to State Head ✓','ok');
-    return;
-  }
-  data.status='SUBMITTED';data.approvals={};
-  pjpSelDay=null;renderPjp();toast('PJP submitted to BDM ✓','ok');
+  const t=pjpSubmitTarget(pjpBdeView);
+  data.status=t.status;data.approvals={};
+  pjpSelDay=null;renderPjp();toast(t.toast,'ok');
 }
 
 
@@ -4292,6 +4334,20 @@ function pnlInr(n){n=Math.round(n);const neg=n<0;return(neg?'-₹':'₹')+Math.a
   /* re-run the app's own render entry points so hydrated data shows up,
      without assuming which module/tab is active */
   function repaint(){
+    /* Guard: never let a stale/empty ROUTEDATA from storage strip the built-in
+       route master. If routes are missing, re-seed from REAL_ROUTES. */
+    try{
+      if(typeof REAL_ROUTES!=='undefined' && typeof ROUTEDATA!=='undefined'){
+        if(!Array.isArray(ROUTEDATA.routes)) ROUTEDATA.routes=[];
+        const haveFrs=new Set(ROUTEDATA.routes.map(r=>r.fr));
+        const stOf={}; if(typeof FRS!=='undefined') FRS.forEach(f=>stOf[f.name]=f.state);
+        REAL_ROUTES.forEach(r=>{
+          if(!haveFrs.has(r.fr)){
+            ROUTEDATA.routes.push({route:r.rt,fr:r.fr,state:stOf[r.fr]||r.s,bdm:r.bdm,outlets:r.o,buy:r.b,nonbuy:r.nb,buyPot:r.bp,nonbuyPot:r.np,repeats:4});
+          }
+        });
+      }
+    }catch(e){}
     try{ if(typeof buildFilterBar==='function') buildFilterBar(); }catch(e){}
     try{ if(SESSION && typeof applyRole==='function') applyRole(); }catch(e){}
     try{
