@@ -3378,6 +3378,8 @@ function dsUpload(hour,file){
    Rankings: by Amount (Company Share/Achieved) and by % Achievement             */
 
 let P6_DATA = [];  /* populated from Data Sync each render */
+/* clickable problem-KPI affordance (injected once) */
+(function(){try{const st=document.createElement('style');st.textContent='.p6-kpi-click{cursor:pointer;transition:background .15s,transform .05s}.p6-kpi-click:hover{background:rgba(255,255,255,.05)}.p6-kpi-click:active{transform:translateY(1px)}';document.head.appendChild(st);}catch(e){}})();
 let P6_TAB = 'ops';       // 'ops' | 'rankings'
 let P6_MODE = 'drill';    // 'drill' | 'filter'
 let P6_UNIT = 'bottles';  // 'bottles' | 'cases'
@@ -3586,6 +3588,27 @@ function renderP6Upload(){
   </div>`;
 }
 
+/* Quick-jump chips for the dates that actually have an upload in DATASYNC.
+   Lets the admin switch the Sales Report between uploaded days in one click. */
+function p6DateOptions(){
+  const keys=Object.keys(DATASYNC).filter(dk=>dsLatestUploadForDate(dk))
+    .sort((a,b)=>{const da=p6ParseDate(a),db=p6ParseDate(b);return (db?db.getTime():0)-(da?da.getTime():0);});
+  if(!keys.length)return '';
+  const toISO=dk=>{const d=p6ParseDate(dk);return d&&!isNaN(d)?d.toISOString().slice(0,10):dk;};
+  const toDMY=iso=>{const q=iso.split('-');return q.length===3?`${q[2]}-${q[1]}-${q[0]}`:iso;};
+  const chips=keys.slice(0,8).map(dk=>{const iso=toISO(dk);const on=iso===dsDate;
+    return `<button class="btn sm keepenabled ${on?'primary':''}" style="padding:4px 9px;font-size:11px" onclick="dsDate='${iso}';renderP6()">${toDMY(iso)}</button>`;}).join('');
+  return `<span style="display:inline-flex;gap:5px;flex-wrap:wrap">${chips}</span>`;
+}
+/* Clicking a problem KPI (Not Achieved / Excess / Less Coll) opens the Filter view,
+   which lists exactly which outlets fall into that bucket. */
+function p6ShowProblem(which){
+  P6_MODE='filter';
+  P6_PROBLEM=which;
+  renderP6();
+}
+let P6_PROBLEM=null; // 'na' | 'ex' | 'lc' | null — highlights a panel in Filter view
+
 /* ── Ops tab — drill-down ── */
 function p6TogExp(key){P6_EXPAND.has(key)?P6_EXPAND.delete(key):P6_EXPAND.add(key);P6_SEL_ROUTE=null;renderP6();}
 function p6SelRoute(key){P6_SEL_ROUTE=P6_SEL_ROUTE===key?null:key;renderP6();}
@@ -3604,25 +3627,25 @@ function renderP6Ops(){
     <div class="p6-kpi"><div class="kl">TC</div><div class="kv" style="color:var(--marble)">${fmtN(a.tc)}</div></div>
     <div class="p6-kpi"><div class="kl">PC</div><div class="kv" style="color:var(--green)">${fmtN(a.pc)}</div></div>
     <div class="p6-kpi-sep"></div>
-    <div class="p6-kpi"><div class="kl">Target</div><div class="kv" style="color:var(--amber)">${fmtN(a.tgt)}</div></div>
-    <div class="p6-kpi"><div class="kl">Achieved</div><div class="kv" style="color:var(--green)">${fmtN(a.ach)}</div></div>
-    <div class="p6-kpi"><div class="kl">Diff</div><div class="kv ${a.diff>=0?'pos':'neg'}">${a.diff>=0?'+':''}${fmtN(a.diff)}</div></div>
+    <div class="p6-kpi"><div class="kl">Target${P6_UNIT==='cases'?' (cs)':''}</div><div class="kv" style="color:var(--amber)">${p6UnitFmt(p6UnitVal(a.tgt,a.glass,a.pet))}</div></div>
+    <div class="p6-kpi"><div class="kl">Achieved${P6_UNIT==='cases'?' (cs)':''}</div><div class="kv" style="color:var(--green)">${p6UnitFmt(p6UnitVal(a.ach,a.glass,a.pet))}</div></div>
+    <div class="p6-kpi"><div class="kl">Diff</div><div class="kv ${a.diff>=0?'pos':'neg'}">${a.diff>=0?'+':'-'}${p6UnitFmt(p6UnitVal(Math.abs(a.diff),a.glass,a.pet))}</div></div>
     <div class="p6-kpi"><div class="kl">Achvmt %</div><div class="kv ${a.pct>=100?'pos':a.pct>=70?'warn':'neg'}">${a.pct}%</div></div>
     <div class="p6-kpi-sep"></div>
     <div class="p6-kpi"><div class="kl">Sale ₹</div><div class="kv" style="color:var(--aqua)">${fmtN(a.sale)}</div></div>
     <div class="p6-kpi"><div class="kl">Collected ₹</div><div class="kv" style="color:var(--green)">${fmtN(a.coll)}</div></div>
     <div class="p6-kpi"><div class="kl">Deficit ₹</div><div class="kv ${a.cashDiff<0?'neg':'pos'}">${fmtN(a.cashDiff)}</div></div>
     <div class="p6-kpi-sep"></div>
-    <div class="p6-kpi"><div class="kl">🚩 Not Achieved</div><div class="kv" style="color:var(--red)">${fmtN(a.notAchieved)}</div></div>
-    <div class="p6-kpi"><div class="kl">⬆ Excess</div><div class="kv" style="color:var(--violet)">${fmtN(a.excess)}</div></div>
-    <div class="p6-kpi"><div class="kl">💸 Less Coll.</div><div class="kv" style="color:var(--amber)">${fmtN(a.lessCol)}</div></div>
+    <div class="p6-kpi p6-kpi-click" title="Click to list the outlets that missed target" onclick="p6ShowProblem('na')"><div class="kl">🚩 Not Achieved</div><div class="kv" style="color:var(--red)">${fmtN(a.notAchieved)}</div></div>
+    <div class="p6-kpi p6-kpi-click" title="Click to list the outlets that exceeded target" onclick="p6ShowProblem('ex')"><div class="kl">⬆ Excess</div><div class="kv" style="color:var(--violet)">${fmtN(a.excess)}</div></div>
+    <div class="p6-kpi p6-kpi-click" title="Click to list the outlets with short collection" onclick="p6ShowProblem('lc')"><div class="kl">💸 Less Coll.</div><div class="kv" style="color:var(--amber)">${fmtN(a.lessCol)}</div></div>
   </div>`;
 
   /* drill-down table */
   const hdr=`<tr style="background:var(--panel)">
     <th>Level</th><th style="text-align:right">Outlets</th>
     <th style="text-align:right">SC</th><th style="text-align:right">TC</th><th style="text-align:right">PC</th>
-    <th style="text-align:right">Target</th><th style="text-align:right">Achieved</th>
+    <th style="text-align:right">Target${P6_UNIT==='cases'?' (cs)':''}</th><th style="text-align:right">Achieved${P6_UNIT==='cases'?' (cs)':''}</th>
     <th style="text-align:right">Achvmt %</th>
     <th style="text-align:right">Sale ₹</th><th style="text-align:right">Collected ₹</th>
     <th style="text-align:right">🚩</th><th style="text-align:right">⬆</th><th style="text-align:right">💸</th>
@@ -3638,8 +3661,8 @@ function renderP6Ops(){
       <td class="tnum" style="text-align:right;color:var(--aqua)">${fmtN(a.sc)}</td>
       <td class="tnum" style="text-align:right;color:var(--marble)">${fmtN(a.tc)}</td>
       <td class="tnum" style="text-align:right;color:var(--green)">${fmtN(a.pc)}</td>
-      <td class="tnum" style="text-align:right;color:var(--amber)">${fmtN(a.tgt)}</td>
-      <td class="tnum" style="text-align:right;color:var(--green)">${fmtN(a.ach)}</td>
+      <td class="tnum" style="text-align:right;color:var(--amber)">${p6UnitFmt(p6UnitVal(a.tgt,a.glass,a.pet))}</td>
+      <td class="tnum" style="text-align:right;color:var(--green)">${p6UnitFmt(p6UnitVal(a.ach,a.glass,a.pet))}</td>
       <td class="tnum" style="text-align:right"><span class="chip ${achCls}" style="font-size:11px">${a.pct}%</span></td>
       <td class="tnum" style="text-align:right">${fmtN(a.sale)}</td>
       <td class="tnum" style="text-align:right">${fmtN(a.coll)}</td>
@@ -3731,8 +3754,8 @@ function renderP6Ops(){
                 <td class="tnum" style="text-align:right;color:var(--aqua)">${fmtN(ra.sc)}</td>
                 <td class="tnum" style="text-align:right;color:var(--marble)">${fmtN(ra.tc)}</td>
                 <td class="tnum" style="text-align:right;color:var(--green)">${fmtN(ra.pc)}</td>
-                <td class="tnum" style="text-align:right;color:var(--amber)">${fmtN(ra.tgt)}</td>
-                <td class="tnum" style="text-align:right;color:var(--green)">${fmtN(ra.ach)}</td>
+                <td class="tnum" style="text-align:right;color:var(--amber)">${p6UnitFmt(p6UnitVal(ra.tgt,ra.glass,ra.pet))}</td>
+                <td class="tnum" style="text-align:right;color:var(--green)">${p6UnitFmt(p6UnitVal(ra.ach,ra.glass,ra.pet))}</td>
                 <td class="tnum" style="text-align:right"><span class="chip ${achCls}" style="font-size:11px">${ra.pct}%</span></td>
                 <td class="tnum" style="text-align:right">${fmtN(ra.sale)}</td>
                 <td class="tnum" style="text-align:right">${fmtN(ra.coll)}</td>
@@ -3752,7 +3775,11 @@ function renderP6Ops(){
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
     <span class="chip aqua" style="font-size:12px">📊 ${dateInfo}</span>
     <span style="font-size:12px;color:var(--txt-mute)">${P6_DATA.length.toLocaleString('en-IN')} outlet-days loaded</span>
-    <span style="margin-left:auto;font-size:12px;color:var(--txt-mute)">Source: <b style="color:var(--aqua)">Data Sync · ${dsDate}</b></span>
+    <span style="margin-left:auto;display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--txt-mute)">
+      <span style="letter-spacing:.05em;text-transform:uppercase;font-weight:700;font-size:11px">Report date</span>
+      <input type="date" class="cellsel keepenabled" value="${dsDate}" onchange="dsDate=this.value;renderP6()" style="color-scheme:dark;min-width:150px" title="Pick which uploaded date to view">
+      ${p6DateOptions()}
+    </span>
   </div>
   <div class="p6-tabs">
     <button class="p6-tab ${P6_TAB==='ops'?'active':''}" onclick="P6_TAB='ops';renderP6()">📋 Operations</button>
@@ -3798,7 +3825,7 @@ function p6FilterPanels(rows){
     P6F.fr!=='All'?P6F.fr:null
   ].filter(Boolean).join(' · ')||'India (all)';
   const frCol=r=>`<td style="color:var(--txt-mute);font-size:11px">${(p6Fr(r)||'').replace(/^[A-Z]+_DS_/,'').slice(0,18)}</td>`;
-  const p1=`<div class="panel" style="margin-bottom:14px">
+  const p1=`<div class="panel" id="p6pan-na" style="margin-bottom:14px${P6_PROBLEM==='na'?';outline:2px solid var(--red);outline-offset:2px':''}">
     <div class="panel-h"><h3 style="color:var(--red)">🚩 Target Not Achieved <span class="chip red" style="font-size:11px">${na.length}</span></h3><span class="hint">${scopeNote}</span></div>
     <div class="tbl-scroll" style="max-height:340px;overflow-y:auto"><table style="width:100%;font-size:12px;border-collapse:collapse">
       <thead style="position:sticky;top:0;z-index:2"><tr style="background:var(--panel)"><th style="padding:8px 11px;text-align:left">Outlet</th><th>Franchise</th><th>Route</th><th>Visited</th><th>Visit Time</th><th>Beat Pulse</th><th style="text-align:right">Target</th><th style="text-align:right">Achieved</th></tr></thead>
@@ -3811,7 +3838,7 @@ function p6FilterPanels(rows){
         <td class="tnum" style="text-align:right;color:var(--amber)">${fmtN(p6Target(r))}</td>
         <td class="tnum" style="text-align:right;color:var(--red)">${fmtN(p6Achieved(r))}</td></tr>`).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--green);padding:18px">✓ All targets met</td></tr>'}</tbody>
     </table></div></div>`;
-  const p2=`<div class="panel" style="margin-bottom:14px">
+  const p2=`<div class="panel" id="p6pan-ex" style="margin-bottom:14px${P6_PROBLEM==='ex'?';outline:2px solid var(--violet);outline-offset:2px':''}">
     <div class="panel-h"><h3 style="color:var(--violet)">⬆ Excess Achievement <span class="chip violet" style="font-size:11px">${ex.length}</span></h3></div>
     <div class="tbl-scroll" style="max-height:300px;overflow-y:auto"><table style="width:100%;font-size:12px;border-collapse:collapse">
       <thead style="position:sticky;top:0;z-index:2"><tr style="background:var(--panel)"><th style="padding:8px 11px;text-align:left">Outlet</th><th>Franchise</th><th style="text-align:right">Target</th><th style="text-align:right">Achieved</th><th style="text-align:right">Surplus</th></tr></thead>
@@ -3821,7 +3848,7 @@ function p6FilterPanels(rows){
         <td class="tnum" style="text-align:right;color:var(--green)">${fmtN(p6Achieved(r))}</td>
         <td class="tnum" style="text-align:right;color:var(--violet)">+${fmtN(p6Achieved(r)-p6Target(r))}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--txt-mute);padding:18px">No excess achievement</td></tr>'}</tbody>
     </table></div></div>`;
-  const p3=`<div class="panel">
+  const p3=`<div class="panel" id="p6pan-lc"${P6_PROBLEM==='lc'?' style="outline:2px solid var(--amber);outline-offset:2px"':''}>
     <div class="panel-h"><h3 style="color:var(--amber)">💸 Collection Not Done <span class="chip amber" style="font-size:11px">${lc.length}</span></h3></div>
     <div class="tbl-scroll" style="max-height:300px;overflow-y:auto"><table style="width:100%;font-size:12px;border-collapse:collapse">
       <thead style="position:sticky;top:0;z-index:2"><tr style="background:var(--panel)"><th style="padding:8px 11px;text-align:left">Outlet</th><th>Franchise</th><th style="text-align:right">Invoice ₹</th><th style="text-align:right">Collected ₹</th><th style="text-align:right">Deficit ₹</th></tr></thead>
@@ -3831,6 +3858,8 @@ function p6FilterPanels(rows){
         <td class="tnum" style="text-align:right;color:var(--green)">${fmtN(p6Collection(r))}</td>
         <td class="tnum" style="text-align:right;color:var(--amber)">${fmtN(p6CashDiff(r))}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--green);padding:18px">✓ All collections done</td></tr>'}</tbody>
     </table></div></div>`;
+  const jump=P6_PROBLEM; P6_PROBLEM=null;
+  if(jump){ setTimeout(()=>{const el=document.getElementById('p6pan-'+jump); if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},60); }
   return p1+p2+p3;
 }
 
