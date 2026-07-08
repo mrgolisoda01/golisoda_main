@@ -4400,6 +4400,8 @@ function pnlInr(n){n=Math.round(n);const neg=n<0;return(neg?'-₹':'₹')+Math.a
   }
 
   let lastSaved='';           // JSON of last successful push, for change detection
+  let lastSavedByKey={};      // per-key JSON of last push — lets us push ONLY changed keys
+  let cloudStamp=null;        // newest updated_at we've seen from the cloud (ISO string)
   let saveTimer=null;
   let ready=false;            // don't save until initial load completes
   let disabled=false;         // circuit breaker — trips when the environment can't do fetch
@@ -4427,13 +4429,15 @@ function pnlInr(n){n=Math.round(n);const neg=n<0;return(neg?'-₹':'₹')+Math.a
   async function loadAll(){
     if(disabled) return;
     try{
-      const { data, error } = await sb.from(TABLE).select('id,data').in('id', KEYS);
+      const { data, error } = await sb.from(TABLE).select('id,data,updated_at').in('id', KEYS);
       if(error){ console.warn('[sync] load error:', error.message); ready=true; return; }
       if(data && data.length){
         const map={};
-        data.forEach(row=>{ map[row.id] = row.data; });
+        data.forEach(row=>{ map[row.id] = row.data; if(row.updated_at && (!cloudStamp || row.updated_at>cloudStamp)) cloudStamp=row.updated_at; });
         KEYS.forEach(k=>{ if(k in map){ try{ REG[k].set(map[k]); }catch(e){ console.warn('[sync] hydrate '+k, e); } } });
-        lastSaved = JSON.stringify(snapshot());
+        const snap0=snapshot();
+        lastSaved = JSON.stringify(snap0);
+        KEYS.forEach(k=>{ try{ lastSavedByKey[k]=JSON.stringify(snap0[k]); }catch(e){} });
         repaint();
         console.log('[sync] loaded '+data.length+' datasets from Supabase');
       }else{
@@ -4450,23 +4454,115 @@ function pnlInr(n){n=Math.round(n);const neg=n<0;return(neg?'-₹':'₹')+Math.a
   }
 
   let failCount=0;
+  let saving=false;
+
+  /* Which keys did THIS tab change since its last successful push/load? */
+  function changedKeys(snap){
+    const out=[];
+    KEYS.forEach(k=>{
+      let cur; try{ cur=JSON.stringify(snap[k]); }catch(e){ return; }
+      if(cur!==lastSavedByKey[k]) out.push(k);
+    });
+    return out;
+  }
+
+  /* Deep-merge helper: start from the cloud's copy of a value, then overlay
+     ONLY the sub-paths this tab actually changed (computed by diffing our
+     current value against our own baseline). For plain objects this protects
+     sibling sub-fields (e.g. other franchises' burn) from a stale overwrite.
+     For arrays / primitives we keep our value only if we changed it. */
+  function deepMergeChanged(cloudVal, mineVal, baseVal){
+    if(mineVal && baseVal && cloudVal &&
+       typeof mineVal==='object' && !Array.isArray(mineVal) &&
+       typeof cloudVal==='object' && !Array.isArray(cloudVal)){
+      const out = Object.assign({}, cloudVal);          // base = latest cloud
+      const baseObj = (typeof baseVal==='object'&&!Array.isArray(baseVal)) ? baseVal : {};
+      Object.keys(mineVal).forEach(sub=>{
+        const mineJson=JSON.stringify(mineVal[sub]);
+        const baseJson=JSON.stringify(baseObj[sub]);
+        if(mineJson!==baseJson){
+          out[sub]=deepMergeChanged(cloudVal[sub], mineVal[sub], baseObj[sub]);  // recurse (month→franchise)
+        }
+      });
+      Object.keys(baseObj).forEach(sub=>{ if(!(sub in mineVal)) delete out[sub]; });   // honour my deletions
+      return out;
+    }
+    return mineVal;   // arrays / primitives / brand-new objects: my value wins
+  }
+
+  /* The cloud is ahead of us (another session saved after we loaded).
+     Pull the latest, hydrate untouched keys wholesale, and for keys this tab
+     changed, deep-merge our specific edits over the fresh cloud copy so we
+     neither lose our edits nor clobber the other session's sibling values. */
+  async function reconcile(myChanged){
+    const { data, error } = await sb.from(TABLE).select('id,data,updated_at').in('id', KEYS);
+    if(error){ console.warn('[sync] reconcile load error:', error.message); return false; }
+    const map={};
+    (data||[]).forEach(row=>{ map[row.id]=row.data; if(row.updated_at && (!cloudStamp || row.updated_at>cloudStamp)) cloudStamp=row.updated_at; });
+    KEYS.forEach(k=>{
+      if(!(k in map)) return;
+      if(myChanged.indexOf(k)===-1){
+        try{ REG[k].set(map[k]); }catch(e){ console.warn('[sync] reconcile hydrate '+k, e); }   // untouched → take cloud
+      }else{
+        try{                                                                                     // changed → merge my edits over cloud
+          let mine; try{ mine=REG[k].get(); }catch(e){ mine=undefined; }
+          let base; try{ base=JSON.parse(lastSavedByKey[k]); }catch(e){ base=undefined; }
+          REG[k].set(deepMergeChanged(map[k], mine, base));
+        }catch(e){ console.warn('[sync] reconcile merge '+k, e); }
+      }
+    });
+    const snap=snapshot();
+    KEYS.forEach(k=>{ if(myChanged.indexOf(k)===-1){ try{ lastSavedByKey[k]=JSON.stringify(snap[k]); }catch(e){} } });
+    try{ repaint(); }catch(e){}
+    console.log('[sync] reconciled with newer cloud state; merged local edits into: '+(myChanged.join(', ')||'(none)'));
+    return true;
+  }
+
   async function saveAll(force){
     if(disabled) return;
     if(!ready && !force) return;
-    const snap = snapshot();
-    const json = JSON.stringify(snap);
-    if(!force && json===lastSaved) return;        // nothing changed
-    const stamp = new Date().toISOString();
-    const rows = KEYS.map(k=>({ id: k, data: snap[k], updated_at: stamp }));
+    if(saving) return;                              // avoid overlapping saves
+    let snap = snapshot();
+    let json = JSON.stringify(snap);
+    if(!force && json===lastSaved) return;          // nothing changed at all
+    saving=true;
     try{
+      // ---- staleness guard: has the cloud moved since we last saw it? ----
+      let myChanged = changedKeys(snap);
+      if(myChanged.length || force){
+        try{
+          const { data:head, error:hErr } = await sb.from(TABLE)
+            .select('updated_at').order('updated_at',{ascending:false}).limit(1);
+          if(!hErr && head && head.length){
+            const newest=head[0].updated_at;
+            if(cloudStamp && newest && newest>cloudStamp){
+              // another session wrote after us → merge before we push
+              await reconcile(myChanged);
+              snap = snapshot(); json = JSON.stringify(snap);
+              myChanged = changedKeys(snap);
+            }
+          }
+        }catch(e){ /* if the head check fails, fall through to a normal save */ }
+      }
+
+      if(!force && !myChanged.length){ lastSaved=json; return; }   // nothing left to push after merge
+
+      const stamp = new Date().toISOString();
+      // push ONLY the keys this tab changed (or everything on force/seed)
+      const pushKeys = force ? KEYS : myChanged;
+      const rows = pushKeys.map(k=>({ id: k, data: snap[k], updated_at: stamp }));
       const { error } = await sb.from(TABLE).upsert(rows, { onConflict:'id' });
       if(error){ console.warn('[sync] save error:', error.message); return; }
-      lastSaved = json;                            // only mark saved on success
+      cloudStamp = stamp;                            // we are now the newest
+      lastSaved = json;
+      pushKeys.forEach(k=>{ try{ lastSavedByKey[k]=JSON.stringify(snap[k]); }catch(e){} });
       failCount=0;
     }catch(e){
       if(isFatalEnvError(e)){ tripBreaker(e.message||e.name); return; }
       if(++failCount>=3){ tripBreaker('repeated network failures'); return; }
       console.warn('[sync] save failed:', e);
+    }finally{
+      saving=false;
     }
   }
   function scheduleSave(){
